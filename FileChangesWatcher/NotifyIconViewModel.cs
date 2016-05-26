@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Net.Http;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace Stroiproject
 {
@@ -31,6 +32,45 @@ namespace Stroiproject
             }
         }
 
+        public ICommand ApplyIniFile
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        App.initApplication(null);
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand OpenIniFile
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+                        iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
+                        iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+                        if (File.Exists(iniFilePath) == false)
+                        {
+                            MessageBox.Show("Файл настроек не обнаружен.");
+                        }else
+                        {
+                            System.Diagnostics.Process.Start(iniFilePath);
+                        }
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
         public ICommand OpenHelp
         {
             get
@@ -40,6 +80,21 @@ namespace Stroiproject
                     CommandAction = () =>
                     {
                         System.Diagnostics.Process.Start("http://serv-japp.stpr.ru:4070/support/Soft/FileChangesWatcher.html");
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand OpenHomePage
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        System.Diagnostics.Process.Start("https://sourceforge.net/projects/filechangeswatcher/");
                     },
                     CanExecuteFunc = () => true
                 };

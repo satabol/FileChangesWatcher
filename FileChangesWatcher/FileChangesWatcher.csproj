@@ -351,6 +351,15 @@
   <ItemGroup>
     <Resource Include="Icons\help.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\ini.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\apply.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\homepage.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterResolveReferences">
     <ItemGroup>

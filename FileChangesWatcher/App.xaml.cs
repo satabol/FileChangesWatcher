@@ -208,13 +208,29 @@ namespace Stroiproject
             notifyIcon.ContextMenu.CommandBindings.Add(customCommandBinding);
 
             ht_icons = GetFileTypeAndIcon();
+            initApplication(e);
+        }
+
+        public static void initApplication(StartupEventArgs e)
+        {
+            // Сбросить всех наблюдателей, установленных ранее:
+            foreach(FileSystemWatcher watcher in watchers.ToArray() )
+            {
+                watcher.EnableRaisingEvents = false;
+                watcher.Changed -= new FileSystemEventHandler(OnChanged);
+                watcher.Created -= new FileSystemEventHandler(OnChanged);
+                watcher.Deleted -= new FileSystemEventHandler(OnChanged);
+                watcher.Renamed -= new RenamedEventHandler(OnRenamed);
+                watchers.Remove(watcher);
+                watcher.Dispose();
+            }
 
             // Проверить существование ini-файла. Если его нет, то создать его:
             FileIniDataParser fileIniDataParser = new FileIniDataParser();
             IniParser.Model.IniData data = new IniParser.Model.IniData();
             String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
             iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-            iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\"+ System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+            iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
 
             if (File.Exists(iniFilePath) == false)
             {
@@ -248,7 +264,7 @@ namespace Stroiproject
             try
             {
                 // Определить количество пунктов подменю:
-                log_contextmenu_size = Convert.ToInt32( data.Sections["General"].GetKeyData("log_contextmenu_size").Value );
+                log_contextmenu_size = Convert.ToInt32(data.Sections["General"].GetKeyData("log_contextmenu_size").Value);
             }
             catch (OverflowException)
             {
@@ -265,34 +281,37 @@ namespace Stroiproject
                 folder = (new Regex("(^|)|(|$)")).Replace(folder, "");
                 if (folder.Length > 0)
                 {
-                    if( _extensions.Length>0)
+                    if (_extensions.Length > 0)
                     {
                         _extensions += "|";
                     }
-                    _extensions+=re.Replace(folder, "\\.");
+                    _extensions += re.Replace(folder, "\\.");
                 }
             }
             _extensions = @".*(" + _extensions + ")$";
-            _extensions= (new Regex("(\\|\\|)")).Replace(_extensions, "|");
+            _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
             extensions = _extensions;
 
             // Определить список каталогов, за которыми надо наблюдать:
             ///*
             List<string> arr_folders_for_watch = new List<String>();
-            for(int i=0; i<=data.Sections["FoldersForWatch"].Count-1; i++)
+            for (int i = 0; i <= data.Sections["FoldersForWatch"].Count - 1; i++)
             {
                 String folder = data.Sections["FoldersForWatch"].ElementAt(i).Value;
-                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder) )
+                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
                 {
                     arr_folders_for_watch.Add(folder);
                 }
             }
-            for (int i = 0; i <= e.Args.Length - 1; i++)
+            if (e != null)
             {
-                String folder = e.Args[i];
-                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
+                for (int i = 0; i <= e.Args.Length - 1; i++)
                 {
-                    arr_folders_for_watch.Add(folder);
+                    String folder = e.Args[i];
+                    if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
+                    {
+                        arr_folders_for_watch.Add(folder);
+                    }
                 }
             }
 
@@ -309,7 +328,7 @@ namespace Stroiproject
             arr_folders_for_exceptions = _arr_folders_for_exceptions;
 
             // Список файлов с исключениями:
-            List<string> _arr_files_for_exceptions  = new List<String>();
+            List<string> _arr_files_for_exceptions = new List<String>();
             for (int i = 0; i <= data.Sections["FileNamesExceptions"].Count - 1; i++)
             {
                 String folder = data.Sections["FileNamesExceptions"].ElementAt(i).Value;
@@ -322,14 +341,15 @@ namespace Stroiproject
 
             if (arr_folders_for_watch.Count >= 1)
             {
-                setWatcherForFolderAndSubFolders( arr_folders_for_watch.ToArray() );
+                setWatcherForFolderAndSubFolders(arr_folders_for_watch.ToArray());
             }
             else
             {
-                notifyIcon.ShowBalloonTip("Информация", "Отслеживание каталогов не производится. Укажите путь первым аргументом команды запуска.", BalloonIcon.Info);
+                notifyIcon.ShowBalloonTip("Info", "No watching for folders. Set folders correctly.", BalloonIcon.Info);
             }
-            //*/
         }
+
+        static List<FileSystemWatcher> watchers = new List<FileSystemWatcher>();
 
         private static void setWatcherForFolderAndSubFolders(String[] _paths)
         {
@@ -337,6 +357,7 @@ namespace Stroiproject
             {
                 // Отслеживание изменения в файловой системе:
                 FileSystemWatcher watcher = new FileSystemWatcher();
+                watchers.Add(watcher);
                 watcher.IncludeSubdirectories = true;
 
                 watcher.Path = _path;
@@ -361,7 +382,7 @@ namespace Stroiproject
                 watcher.EnableRaisingEvents = true;
             }
             //notifyIcon.ContextMenu.Opacity = 0.5;
-            notifyIcon.ShowBalloonTip("Информация", "Отслеживание каталогов: \n" + String.Join("\n",  _paths.ToArray() ), BalloonIcon.Info);
+            notifyIcon.ShowBalloonTip("Info", "Watching folders: \n" + String.Join("\n",  _paths.ToArray() ), BalloonIcon.Info);
         }
         
         // Параметры для отлеживания изменений в файлах: ========================================
