@@ -9,13 +9,16 @@
         reuse the same context menu (which is a resource) again (which will have its DataContext set to the old TaskbarIcon)
     -->
     <ContextMenu x:Shared="false" x:Key="SysTrayMenu">
+        <MenuItem Header="Справка" Command="{Binding OpenHelp}">
+            <MenuItem.Icon>
+                <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
+            </MenuItem.Icon>
+        </MenuItem>
         <Separator />
         <MenuItem Header="Выход из приложения" Command="{Binding ExitApplicationCommand}">
-            <!--
             <MenuItem.Icon>
-                <Image Source="/Icons/youtube.ico"   Width="16" Height="16"/>
+                <Image Source="/Icons/FileWatcher.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>
-            -->
         </MenuItem>
     </ContextMenu>
 
@@ -23,7 +26,7 @@
     <!-- the application's NotifyIcon - started from App.xaml.cs. Declares its own view model. -->
     <tb:TaskbarIcon x:Key="NotifyIcon"
                     IconSource="/Icons/FileWatcher.ico"
-                    ToolTipText="Наблюдатель за изменениями в файлах, right-click for menu"
+                    ToolTipText="FileChangesWatcher, right-click for menu"
                     DoubleClickCommand="{Binding ShowWindowCommand}"
                     ContextMenu="{StaticResource SysTrayMenu}">
 

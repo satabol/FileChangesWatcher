@@ -30,7 +30,22 @@ namespace Stroiproject
                 handler(this, new PropertyChangedEventArgs(name));
             }
         }
-        
+
+        public ICommand OpenHelp
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        System.Diagnostics.Process.Start("http://serv-japp.stpr.ru:4070/support/Soft/FileChangesWatcher.html");
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
         public ICommand ExitApplicationCommand
         {
             get

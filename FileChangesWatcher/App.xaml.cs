@@ -168,15 +168,7 @@ namespace Stroiproject
         private void CanExecuteCustomCommand(object sender, CanExecuteRoutedEventArgs e)
         {
             Control target = e.Source as Control;
-
-            if (target != null)
-            {
-                e.CanExecute = true;
-            }
-            else
-            {
-                e.CanExecute = false;
-            }
+            e.CanExecute = true;
         }
 
         // Пересоздать пункты контекстного меню, которые указывают на файлы.
@@ -232,11 +224,16 @@ namespace Stroiproject
                 data.Sections.AddSection("FoldersForExceptions");
                 data.Sections.AddSection("FileNamesExceptions");
                 // Количество файлов, видимое в меню:
-                data.Sections["General"].AddKey("log_contextmenu_size", "5");
+                data.Sections["General"].AddKey("log_contextmenu_size", "7");
                 // Список расширений, которые надо вывести на экран:
-                data.Sections["Extensions"].AddKey("extensions01", ".docx,.doc");
+                data.Sections["Extensions"].AddKey("extensions01", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.doc|.docx|.xls|.xlsx|.ppt|.pptx|.rtf|.pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.xslt|.java");
+                data.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
+                data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
+                data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
+                data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
                 // Список каталогов, за которыми надо следить:
-                data.Sections["FoldersForWatch"].AddKey("folder01", "");
+                data.Sections["FoldersForWatch"].AddKey("folder01", "D:\\");
+                data.Sections["FoldersForWatch"].AddKey("folder02", "E:\\Docs");
                 // Список каталогов, которые надо исключить из "слежения":
                 data.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
                 data.Sections["FileNamesExceptions"].AddKey("file01", "~$");
@@ -285,7 +282,7 @@ namespace Stroiproject
             for(int i=0; i<=data.Sections["FoldersForWatch"].Count-1; i++)
             {
                 String folder = data.Sections["FoldersForWatch"].ElementAt(i).Value;
-                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false)
+                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder) )
                 {
                     arr_folders_for_watch.Add(folder);
                 }
@@ -293,7 +290,7 @@ namespace Stroiproject
             for (int i = 0; i <= e.Args.Length - 1; i++)
             {
                 String folder = e.Args[i];
-                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false)
+                if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
                 {
                     arr_folders_for_watch.Add(folder);
                 }
