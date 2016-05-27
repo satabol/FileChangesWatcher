@@ -161,6 +161,36 @@ namespace Stroiproject
                 };
             }
         }
+        public ICommand OpenHomeFolder
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        String exe_folder = App.getExeFilePath();
+                        Process.Start("explorer.exe", "/select,\"" + exe_folder + "\"");
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+        public ICommand ShareMeByEmail
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        String exe_folder = App.getExeFilePath();
+                        Process.Start("mailto:?subject=look at this website&body=Hi,I found this website https://sourceforge.net/projects/filechangeswatcher/");
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
 
         public ICommand ExitApplicationCommand
         {

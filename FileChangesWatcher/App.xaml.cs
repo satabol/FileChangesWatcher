@@ -28,6 +28,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using System.Collections;
 using IniParser;
+using System.Security.AccessControl;
 
 namespace Stroiproject
 {
@@ -201,6 +202,20 @@ namespace Stroiproject
 
             base.OnStartup(e);
 
+            /* Пыьаюсь выяснить возможность писать в каталог. Пока безрезультатно. Программа валится при запуске, если у пользователя в каталоге запуска недостаточно прав.
+            String exeFilePath = getExeFilePath();
+            String appFolder = System.IO.Path.GetDirectoryName(exeFilePath);
+            if(HasWritePermission(appFolder) == false)
+            {
+                if( MessageBox.Show("You have low access permission in folder\n\n"+appFolder+"\n Program cannot run.\nOpen home folder before close?", "Error", MessageBoxButton.YesNo) == MessageBoxResult.OK)
+                {
+                    Process.Start("explorer.exe", "/select,\"" + exeFilePath + "\"");
+                }
+                return;
+            }
+            //*/
+
+
             notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
             //notifyIcon.ContextMenu.Items.Insert(0, new Separator() );  // http://stackoverflow.com/questions/4823760/how-to-add-horizontal-separator-in-a-dynamically-created-contextmenu
@@ -217,6 +232,12 @@ namespace Stroiproject
             iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
             iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
             return iniFilePath;
+        }
+        public static String getExeFilePath()
+        {
+            String exeFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+            exeFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            return exeFilePath;
         }
 
         public static bool IsAppInRegestry()
@@ -248,6 +269,7 @@ namespace Stroiproject
                 data = fileIniDataParser.ReadFile(iniFilePath);
                 data.Sections["General"].RemoveKey("autostart_on_windows");
                 data.Sections["General"].AddKey("autostart_on_windows", "true");
+                UTF8Encoding a = new UTF8Encoding();
                 fileIniDataParser.WriteFile(iniFilePath, data);
             }
             catch (Exception e)
@@ -297,25 +319,24 @@ namespace Stroiproject
             // Проверить существование ini-файла. Если его нет, то создать его:
             FileIniDataParser fileIniDataParser = new FileIniDataParser();
             IniParser.Model.IniData data = new IniParser.Model.IniData();
-            String iniFilePath = getIniFilePath(); // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
-            //iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-            //iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+            String iniFilePath = getIniFilePath();
 
             if (File.Exists(iniFilePath) == false)
             {
+                data.Sections.AddSection("Comments");
                 data.Sections.AddSection("General");
                 data.Sections.AddSection("Extensions");
                 data.Sections.AddSection("FoldersForWatch");
                 data.Sections.AddSection("FoldersForExceptions");
                 data.Sections.AddSection("FileNamesExceptions");
+
+                data.Sections["Comments"].AddKey("All extensions in Extensions Section are union in one string. Can be RegEx.");
+                data.Sections["Comments"].AddKey("All FoldersForExceptions Section   used in function StartsWith. Not use RegEx.");
+                data.Sections["Comments"].AddKey("All FileNamesExceptions Section    used in StartsWith. Not use RegEx.");
+                data.Sections["Comments"].AddKey("All keys in sections have to be unique in their sections.");
                 // Количество файлов, видимое в меню:
                 data.Sections["General"].AddKey("log_contextmenu_size", "7");
-                // Список расширений, которые надо вывести на экран:
-                //data.Sections["Extensions"].AddKey("extensions01", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.doc|.docx|.xls|.xlsx|.ppt|.pptx|.rtf|.pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.xslt|.java");
-                //data.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
-                //data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
-                //data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
-                //data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
+                // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки^
                 data.Sections["Extensions"].AddKey("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z");
                 data.Sections["Extensions"].AddKey("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf");
                 data.Sections["Extensions"].AddKey("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw");
@@ -331,7 +352,9 @@ namespace Stroiproject
                 // Список каталогов, за которыми надо следить:
                 data.Sections["FoldersForWatch"].AddKey("folder01", "D:\\");
                 data.Sections["FoldersForWatch"].AddKey("folder02", "E:\\Docs");
-                // Список каталогов, которые надо исключить из "слежения":
+                data.Sections["FoldersForWatch"].AddKey("folder03", "F:\\");
+                data.Sections["FoldersForWatch"].AddKey("folder03", "G:\\Example русские буквы");
+                // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
                 data.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
                 data.Sections["FileNamesExceptions"].AddKey("file01", "~$");
 
@@ -339,7 +362,24 @@ namespace Stroiproject
             }
             else
             {
-                data = fileIniDataParser.ReadFile(iniFilePath);
+                try
+                {
+                    data = fileIniDataParser.ReadFile(iniFilePath);
+                    notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
+                }
+                catch (IniParser.Exceptions.ParsingException ex)
+                {
+                    notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu, please.";
+                    notifyIcon.ShowBalloonTip("Error in ini-file. Open settings in menu, please", ""+ex.Message + "", BalloonIcon.Error);
+                    /*
+                    if(System.Windows.MessageBox.Show("Error in ini-file:\n" + ex.Message+"\n\n Please - correct file or delete it for recreation.\n Application exit!\n\nOpen ini file before exit?", "Alert!", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(iniFilePath);
+                    }
+                    //*/
+                    //App.Current.Shutdown();
+                    return;
+                }
             }
 
 
@@ -923,6 +963,46 @@ namespace Stroiproject
             embeddedIcon.IconIndex = iconIndex;
 
             return embeddedIcon;
+        }
+
+        public static bool HasWritePermission(string dir)
+        {
+            bool Allow = false;
+            bool Deny = false;
+            DirectorySecurity acl = null;
+            try
+            {
+                acl = Directory.GetAccessControl(dir);
+            }
+            catch (System.IO.DirectoryNotFoundException)
+            {
+                throw new Exception("DirectoryNotFoundException");
+            }
+            if (acl == null)
+            {
+                return false;
+            }
+            AuthorizationRuleCollection arc = acl.GetAccessRules(true, true, typeof(System.Security.Principal.SecurityIdentifier));
+            if (arc == null)
+            {
+                return false;
+            }
+            foreach (FileSystemAccessRule rule in arc)
+            {
+                if ((FileSystemRights.Write & rule.FileSystemRights) != FileSystemRights.Write)
+                {
+                    continue;
+                }
+                if (rule.AccessControlType == AccessControlType.Allow)
+                {
+                    Allow = true;
+                }
+                else if (rule.AccessControlType == AccessControlType.Deny)
+                {
+                    Deny = true;
+                }
+            }
+            return Allow && !Deny;
         }
     }
 }

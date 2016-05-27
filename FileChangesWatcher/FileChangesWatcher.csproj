@@ -360,6 +360,9 @@
   <ItemGroup>
     <Resource Include="Icons\homepage.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\home_folder.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterResolveReferences">
     <ItemGroup>

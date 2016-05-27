@@ -8,41 +8,58 @@
         The "shared" directive is needed if we reopen the sample window a few times - WPF will otherwise
         reuse the same context menu (which is a resource) again (which will have its DataContext set to the old TaskbarIcon)
     -->
-    <ContextMenu x:Shared="false" x:Key="SysTrayMenu">
+    <ContextMenu x:Shared="false" x:Key="SysTrayMenu" MinWidth="250">
         <Separator />
-        <MenuItem Header="Open Settings" Command="{Binding OpenIniFile}">
+        <MenuItem Header="Settings">
             <MenuItem.Icon>
                 <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>
+            <MenuItem Header="Open Settings" Command="{Binding OpenIniFile}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <!--
+            -->
+            <MenuItem Header="Apply Settings" Command="{Binding ApplyIniFile}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/apply.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem x:Name="cbAutostart" Header="Autostart when Windows starts" 
+                      IsCheckable="True"
+                      IsChecked="{Binding SaveToDbOneChecked}"
+                      Command="{Binding AutostartSetter}"
+                      >
+            </MenuItem>
+            <MenuItem Header="Open Home Folder" Command="{Binding OpenHomeFolder}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/home_folder.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <!--
+            <MenuItem Header="Help" Command="{Binding OpenHelp}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            -->
+            <!--
+            -->
+            <MenuItem Header="Home page" Command="{Binding OpenHomePage}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <!--
+            <MenuItem Header="Share me to ..." Command="{Binding ShareMeByEmail}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/search.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            -->
         </MenuItem>
-        <!--
-        -->
-        <MenuItem Header="Apply Settings" Command="{Binding ApplyIniFile}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/apply.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
-        <MenuItem x:Name="cbAutostart" Header="Autostart when Windows starts" 
-                  IsCheckable="True"
-                  IsChecked="{Binding SaveToDbOneChecked}"
-                  Command="{Binding AutostartSetter}"
-                  >
-        </MenuItem>
-        <!--
-        -->
-        <MenuItem Header="Help" Command="{Binding OpenHelp}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
-        <!--
-        <MenuItem Header="Home page" Command="{Binding OpenHomePage}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
-        -->
-        <Separator />
+
         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}">
             <MenuItem.Icon>
                 <Image Source="/Icons/FileWatcher.ico"   Width="16" Height="16"/>
@@ -54,7 +71,7 @@
     <!-- the application's NotifyIcon - started from App.xaml.cs. Declares its own view model. -->
     <tb:TaskbarIcon x:Key="NotifyIcon"
                     IconSource="/Icons/FileWatcher.ico"
-                    ToolTipText="FileChangesWatcher, right-click for menu"
+                    ToolTipText="FileChangesWatcher. Right-click for menu"
                     DoubleClickCommand="{Binding ShowWindowCommand}"
                     ContextMenu="{StaticResource SysTrayMenu}">
 
