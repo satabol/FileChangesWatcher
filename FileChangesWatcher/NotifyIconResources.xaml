@@ -22,6 +22,12 @@
                 <Image Source="/Icons/apply.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>
         </MenuItem>
+        <MenuItem x:Name="cbAutostart" Header="Autostart when Windows starts" 
+                  IsCheckable="True"
+                  IsChecked="{Binding SaveToDbOneChecked}"
+                  Command="{Binding AutostartSetter}"
+                  >
+        </MenuItem>
         <!--
         -->
         <MenuItem Header="Help" Command="{Binding OpenHelp}">
@@ -36,6 +42,7 @@
             </MenuItem.Icon>
         </MenuItem>
         -->
+        <Separator />
         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}">
             <MenuItem.Icon>
                 <Image Source="/Icons/FileWatcher.ico"   Width="16" Height="16"/>

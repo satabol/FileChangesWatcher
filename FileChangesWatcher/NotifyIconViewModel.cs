@@ -16,11 +16,26 @@ using System.Net.Http;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Stroiproject;
+using Microsoft.Win32;
+using IniParser;
 
 namespace Stroiproject
 {
     class NotifyIconViewModel : INotifyPropertyChanged
     {
+
+        public bool SaveToDbOneChecked
+        {
+            get {
+                return App.IsAppInRegestry();
+            }
+            set {
+                OnPropertyChanged("SaveToDbOneChecked");
+            }
+        }
+
+        // ==============================
         public event PropertyChangedEventHandler PropertyChanged;
         
         protected void OnPropertyChanged(string name)
@@ -32,6 +47,51 @@ namespace Stroiproject
             }
         }
 
+        public ICommand Mess
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        switch(MessageBox.Show("Test: ", "", MessageBoxButton.OKCancel))
+                        {
+                            case MessageBoxResult.OK:
+                                SaveToDbOneChecked = SaveToDbOneChecked;
+                                break;
+                            default:
+                                SaveToDbOneChecked = !SaveToDbOneChecked;
+                                break;
+                        }
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand AutostartSetter
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        if( App.IsAppInRegestry()==true)
+                        {
+                            App.resetAutostart();
+                        }
+                        else
+                        {
+                            App.setAutostart();
+                        }
+                        OnPropertyChanged("SaveToDbOneChecked");
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
         public ICommand ApplyIniFile
         {
             get
@@ -41,6 +101,7 @@ namespace Stroiproject
                     CommandAction = () =>
                     {
                         App.initApplication(null);
+                        OnPropertyChanged("SaveToDbOneChecked");
                     },
                     CanExecuteFunc = () => true
                 };
@@ -135,15 +196,5 @@ namespace Stroiproject
             remove { CommandManager.RequerySuggested -= value; }
         }
     }
-
-     /*
-    public class OpenBrowser : ICommand
-    {
-        public void Execute(object parameter)
-        {
-            Object[] arrObject = (object[])parameter;
-            MainWindow mv = (MainWindow)arrObject[0];
-        }
-    }
-    */
+    
 }

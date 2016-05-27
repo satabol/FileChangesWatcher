@@ -211,6 +211,75 @@ namespace Stroiproject
             initApplication(e);
         }
 
+        public static String getIniFilePath()
+        {
+            String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+            iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+            return iniFilePath;
+        }
+
+        public static bool IsAppInRegestry()
+        {
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+            if (rk.GetValue(appName) != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static void setAutostart()
+        {
+            try
+            {
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+                rk.SetValue(appName, Process.GetCurrentProcess().MainModule.FileName);
+
+                // После установки автозапуска отметить это настройкой в конфигурации:
+                FileIniDataParser fileIniDataParser = new FileIniDataParser();
+                IniParser.Model.IniData data = new IniParser.Model.IniData();
+                String iniFilePath = App.getIniFilePath();
+                data = fileIniDataParser.ReadFile(iniFilePath);
+                data.Sections["General"].RemoveKey("autostart_on_windows");
+                data.Sections["General"].AddKey("autostart_on_windows", "true");
+                fileIniDataParser.WriteFile(iniFilePath, data);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+        public static void resetAutostart()
+        {
+            try
+            {
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+                rk.DeleteValue(appName, false);
+
+                // После установки автозапуска отметить это настройкой в конфигурации:
+                FileIniDataParser fileIniDataParser = new FileIniDataParser();
+                IniParser.Model.IniData data = new IniParser.Model.IniData();
+                String iniFilePath = App.getIniFilePath();
+                data = fileIniDataParser.ReadFile(iniFilePath);
+                data.Sections["General"].RemoveKey("autostart_on_windows");
+                data.Sections["General"].AddKey("autostart_on_windows", "false");
+                fileIniDataParser.WriteFile(iniFilePath, data);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message);
+            }
+        }
+
+
         public static void initApplication(StartupEventArgs e)
         {
             // Сбросить всех наблюдателей, установленных ранее:
@@ -228,9 +297,9 @@ namespace Stroiproject
             // Проверить существование ini-файла. Если его нет, то создать его:
             FileIniDataParser fileIniDataParser = new FileIniDataParser();
             IniParser.Model.IniData data = new IniParser.Model.IniData();
-            String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
-            iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-            iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+            String iniFilePath = getIniFilePath(); // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+            //iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            //iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
 
             if (File.Exists(iniFilePath) == false)
             {
@@ -242,11 +311,23 @@ namespace Stroiproject
                 // Количество файлов, видимое в меню:
                 data.Sections["General"].AddKey("log_contextmenu_size", "7");
                 // Список расширений, которые надо вывести на экран:
-                data.Sections["Extensions"].AddKey("extensions01", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.doc|.docx|.xls|.xlsx|.ppt|.pptx|.rtf|.pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.xslt|.java");
+                //data.Sections["Extensions"].AddKey("extensions01", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.doc|.docx|.xls|.xlsx|.ppt|.pptx|.rtf|.pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.xslt|.java");
+                //data.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
+                //data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
+                //data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
+                //data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
+                data.Sections["Extensions"].AddKey("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z");
+                data.Sections["Extensions"].AddKey("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf");
+                data.Sections["Extensions"].AddKey("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw");
+                data.Sections["Extensions"].AddKey("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm");
+                data.Sections["Extensions"].AddKey("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|vsdm");
+                data.Sections["Extensions"].AddKey("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl");
                 data.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
                 data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
                 data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
                 data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
+                data.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java");
+                //data.Sections["Extensions"].AddKey("", "");
                 // Список каталогов, за которыми надо следить:
                 data.Sections["FoldersForWatch"].AddKey("folder01", "D:\\");
                 data.Sections["FoldersForWatch"].AddKey("folder02", "E:\\Docs");
@@ -259,6 +340,20 @@ namespace Stroiproject
             else
             {
                 data = fileIniDataParser.ReadFile(iniFilePath);
+            }
+
+
+            // При первом запуске проверить, если в настройках нет флага, отменяющего автозагрузку,
+            // то прописать автозапуск приложения в реестр:
+            if (data.Sections["General"].GetKeyData("autostart_on_windows") == null) {
+                setAutostart();
+            }else 
+            if("true".Equals(data.Sections["General"].GetKeyData("autostart_on_windows").Value))
+            {
+                setAutostart();
+            }else
+            {
+                resetAutostart();
             }
 
             try
@@ -291,6 +386,7 @@ namespace Stroiproject
             _extensions = @".*(" + _extensions + ")$";
             _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
             extensions = _extensions;
+            re_extensions = new Regex(extensions, RegexOptions.IgnoreCase);
 
             // Определить список каталогов, за которыми надо наблюдать:
             ///*
@@ -390,6 +486,7 @@ namespace Stroiproject
         // https://lucidworks.com/blog/2009/09/02/content-extraction-with-tika/
         // static String extentions = @".*(\.tar|\.jar|\.zip|\.bzip2|\.gz|\.tgz|\.doc|\.xls|\.ppt|\.rtf|\.pdf|\.html|\.xhtml|\.txt|\.bmp|\.gif|\.png|\.jpeg|\.tiff|\.mp3|\.aiff|\.au|\.midi|\.wav|\.pst|\.xml|\.class|\.java)$";
         static String extensions = null;
+        static Regex re_extensions = null;
         // Список каталогов, которые надо исключить из вывода:
         static List<String> arr_folders_for_exceptions = null;
         static List<String> arr_files_for_exceptions = null;
@@ -521,7 +618,8 @@ namespace Stroiproject
                 }
             }
 
-            if (Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase))
+            //if (Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase))
+            if(re_extensions.IsMatch(e.FullPath) )
             {
                 String lastFilePath=null;
                 // Console.WriteLine("watched file type changed.");
