@@ -163,8 +163,28 @@ namespace Stroiproject
         private void ExecutedCustomCommand(object sender, ExecutedRoutedEventArgs e)
         {
             //MessageBox.Show("Custom Command Executed: "+ e.Parameter);
-            Process.Start("explorer.exe", "/select,\"" + e.Parameter + "\"");
+            String str_path = e.Parameter.ToString();
+            bool bool_path_is_file = true;
+            try
+            {
+                // Проверить о чём идёт речь - о каталоге или о файле:
+                bool_path_is_file = !File.GetAttributes(str_path).HasFlag(FileAttributes.Directory);
+            }
+            catch (System.UnauthorizedAccessException ex)
+            {
+                // TODO: В дальнейшем надо подумать как на них реагировать.
+            }
+
+            if (bool_path_is_file)
+            {
+                Process.Start("explorer.exe", "/select,\"" + str_path + "\"");
+            }
+            else
+            {
+                Process.Start("explorer.exe", "\"" + str_path + "\"");
+            }
         }
+
         // CanExecuteRoutedEventHandler that only returns true if the source is a control.
         private void CanExecuteCustomCommand(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -182,10 +202,17 @@ namespace Stroiproject
             }
 
             // Заполнить новые пункты:
-            foreach (var obj in stackPaths.OrderBy(d => d.Value.index))
+            foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray() )
             {
-                MenuItem mi = obj.Value.mi;
-                notifyIcon.ContextMenu.Items.Insert(0, mi);
+                if( File.Exists(obj.Key) == true)
+                {
+                    MenuItem mi = obj.Value.mi;
+                    notifyIcon.ContextMenu.Items.Insert(0, mi);
+                }
+                else
+                {
+                    stackPaths.Remove(obj.Key);
+                }
             }
         }
 
@@ -499,8 +526,8 @@ namespace Stroiproject
                 watcher.Path = _path;
                 /* Watch for changes in LastAccess and LastWrite times, and
                     the renaming of files or directories. */
-                watcher.NotifyFilter = NotifyFilters.LastAccess
-                    | NotifyFilters.LastWrite
+                watcher.NotifyFilter = //NotifyFilters.LastAccess
+                    NotifyFilters.LastWrite
                     | NotifyFilters.FileName
                     | NotifyFilters.DirectoryName
                     ;
@@ -533,12 +560,15 @@ namespace Stroiproject
         // Количество файлов, которые видны в контекстном меню:
         static int log_contextmenu_size = 5;
 
+        // Если _old_path!=null, то надо переименовать имеющиеся пути с _old_path на _path
+        private static int menuitem_header_length = 20;
         private static void appendPathToDictionary(String _path, WatcherChangeTypes changedType)
         {
             String str = _path;
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
                 notifyIcon.ShowBalloonTip("", _path, BalloonIcon.Info);
+                // Если такой путь уже есть в логе, то нужно его удалить. Это позволит переместить элемент на верх списка.
                 if (stackPaths.ContainsKey(_path) == true)
                 {
                     removePathFromDictionary(_path);
@@ -556,8 +586,7 @@ namespace Stroiproject
 
                     // Создать пункт меню и наполнить его смыслом:
                     MenuItem mi = new MenuItem();
-                    int delta = 20;
-                    mi.Header = _path.Length>(delta*2+5) ? _path.Substring(0, delta)+" ... "+_path.Substring( _path.Length-delta) : _path;
+                    mi.Header = _path.Length>(menuitem_header_length*2+5) ? _path.Substring(0, menuitem_header_length)+" ... "+_path.Substring( _path.Length-menuitem_header_length) : _path;
                     /* Пробую установить цвет шрифта для разных событий над файлом. Плохая идея, т.к. приложение может несколько раз менять файл во время записи. Даже переименовывать.
                     if (changedType == WatcherChangeTypes.Changed)
                     {
@@ -637,56 +666,112 @@ namespace Stroiproject
                 }
             });
         }
+        private static void renamePathFromDictionary(String _old_path, string _new_path, WatcherChangeTypes cType)
+        {
+            Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
+            {
+                MenuItemData _id = null;
+                foreach( KeyValuePair<string, MenuItemData> mid in stackPaths.ToArray())
+                {
+                    if(mid.Key.StartsWith(_old_path) == true)
+                    {
+                        string _Key = mid.Key.Replace(_old_path, _new_path);
+                        MenuItem mi = mid.Value.mi;
+                        mi.Header = _Key.Length > (menuitem_header_length * 2 + 5) ? _Key.Substring(0, menuitem_header_length) + " ... " + _Key.Substring(_new_path.Length - menuitem_header_length) : _Key;
+                        mi.ToolTip = _Key;
+                        mi.CommandParameter = _Key;
+                        stackPaths.Remove(mid.Key);
+                        MenuItemData id = new MenuItemData(mi, mid.Value.index);
+                        stackPaths.Add(_Key, id);
+                    }
+                }
+                reloadCustomMenuItems();
+            });
+        }
 
-        // Запомнить файлы, которые изменялись последними:
         private static void OnChanged(object source, FileSystemEventArgs e)
         {
-            // Проверить, а не начинается ли каталог с исключения:
-            for(int i=0; i<= arr_folders_for_exceptions.Count-1; i++)
+            bool bool_path_is_file = true;
+            if(e.ChangeType == WatcherChangeTypes.Deleted) // Любой удаляемый элемент можно удалять по-одному, т.к. файлы всегда удаляются раньше каталогов, то в логах к моменту удаления каталогов всё содержимое уже должно быть удалено.
             {
-                if( e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i))==true)
+                if (stackPaths.ContainsKey(e.FullPath) == true)  // для экономии времени
+                {
+                    removePathFromDictionary(e.FullPath);
+                    return;
+                }
+            }
+            else
+            {
+                try
+                {
+                    // Проверить о чём идёт речь - о каталоге или о файле:
+                    bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
+                }
+                catch (System.UnauthorizedAccessException ex)
+                {
+                    // TODO: В дальнейшем надо подумать как на них реагировать.
+                }
+            }
+
+            // Если изменяемым является только каталог, но при этом его не удаляют, то не регистрировать это изменение.
+            // Я заметил возникновение этого события, когда я меняю что-то непосредственно в подкаталоге 
+            // (например, переименовываю его подфайл или подкаталог)
+            if ( bool_path_is_file==false && e.ChangeType != WatcherChangeTypes.Deleted)
+            {
+                return;
+            }
+
+            // Проверить, а не начинается ли каталог с исключения (неважно, что это файл или каталог):
+            for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
+            {
+                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true)
                 {
                     return;
                 }
             }
-            // Проверить, а не начинается ли имя файла с исключения:
-            for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
+
+            if (bool_path_is_file == true)
             {
-                if (Path.GetFileNameWithoutExtension(e.FullPath).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
+                // Проверить, а не начинается ли имя файла с исключения:
+                for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
                 {
-                    return;
+                    if (Path.GetFileNameWithoutExtension(e.FullPath).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
+                    {
+                        return;
+                    }
                 }
             }
 
             //if (Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase))
-            if(re_extensions.IsMatch(e.FullPath) )
+            if (bool_path_is_file == true && re_extensions.IsMatch(e.FullPath) || bool_path_is_file == false)
             {
-                String lastFilePath=null;
                 // Console.WriteLine("watched file type changed.");
                 // Specify what is done when a file is changed, created, or deleted.
                 // Console.WriteLine("File: " + e.FullPath + " " + e.ChangeType);
                 if (e.ChangeType == WatcherChangeTypes.Deleted)
                 {
                     removePathFromDictionary(e.FullPath);
-                    if (stackPaths.Count > 0)
-                    {
-                        lastFilePath = stackPaths.Last().Key;
-                    }
-                    else
-                    {
-                        lastFilePath = null;
-                    }
                 }
                 else
                 {
-                    lastFilePath = e.FullPath;
-                    appendPathToDictionary(lastFilePath, e.ChangeType);
+                    appendPathToDictionary(e.FullPath, e.ChangeType);
                 }
             }
         }
 
         private static void OnRenamed(object source, RenamedEventArgs e)
         {
+            bool bool_path_is_file = true;
+            try
+            {
+                // Проверить о чём идёт речь - о каталоге или о файле:
+                bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
+            }
+            catch (System.UnauthorizedAccessException ex)
+            {
+                // TODO: В дальнейшем надо подумать как на них реагировать.
+            }
+
             // Проверить, а не начинается ли каталог с исключения:
             bool exceptionFullPath = false;
             for(int i=0; i<= arr_folders_for_exceptions.Count-1; i++)
@@ -698,28 +783,35 @@ namespace Stroiproject
                 }
             }
             bool exceptionFileNameFullPath = false;
-            for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
+            // Каталог не надо проверять на исключения имён файлов.
+            if (bool_path_is_file == true)
             {
-                if (System.IO.Path.GetFileNameWithoutExtension(e.FullPath).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
+                for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
                 {
-                    exceptionFileNameFullPath = true;
-                    break;
+                    if (System.IO.Path.GetFileNameWithoutExtension(e.FullPath).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
+                    {
+                        exceptionFileNameFullPath = true;
+                        break;
+                    }
                 }
             }
 
-            if (Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase)
-                || Regex.IsMatch(e.OldFullPath, extensions, RegexOptions.IgnoreCase)
-                )
+            if( bool_path_is_file && (re_extensions.IsMatch(e.FullPath) || re_extensions.IsMatch(e.OldFullPath)) || bool_path_is_file==false )
             {
-                String lastFilePath = null;
-                // Specify what is done when a file is renamed.
-                // Console.WriteLine("File: {0} renamed to {1}", e.OldFullPath, e.FullPath);
-
                 removePathFromDictionary(e.OldFullPath);
-                if (exceptionFullPath==false && exceptionFileNameFullPath==false && Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase))
+                //  А если путь является каталогом, то переименовать пути, которые являются подкаталогами:
+                if(bool_path_is_file == false)
                 {
-                    lastFilePath = e.FullPath;
-                    appendPathToDictionary(lastFilePath, e.ChangeType);
+
+                }
+                if ( bool_path_is_file && exceptionFullPath==false && exceptionFileNameFullPath==false && re_extensions.IsMatch(e.FullPath))
+                {
+                    appendPathToDictionary(e.FullPath, e.ChangeType);
+                }
+                else if(bool_path_is_file == false)
+                {
+                    renamePathFromDictionary(e.OldFullPath, e.FullPath, e.ChangeType);
+                    appendPathToDictionary(e.FullPath, e.ChangeType);
                 }
             }
         }
