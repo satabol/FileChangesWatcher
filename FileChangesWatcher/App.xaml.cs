@@ -29,6 +29,7 @@ using Microsoft.Win32;
 using System.Collections;
 using IniParser;
 using System.Security.AccessControl;
+//using NotificationsExtensions.Tiles;
 
 namespace Stroiproject
 {
@@ -170,9 +171,12 @@ namespace Stroiproject
                 // Проверить о чём идёт речь - о каталоге или о файле:
                 bool_path_is_file = !File.GetAttributes(str_path).HasFlag(FileAttributes.Directory);
             }
-            catch (System.UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
             {
                 // TODO: В дальнейшем надо подумать как на них реагировать.
+                //reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
+                notifyIcon.ShowBalloonTip("cannot open explorer", ex.Message, BalloonIcon.Error);
+                return;
             }
 
             if (bool_path_is_file)
@@ -195,25 +199,42 @@ namespace Stroiproject
         // Пересоздать пункты контекстного меню, которые указывают на файлы.
         protected static void reloadCustomMenuItems()
         {
-            // Сначала очистить пункты меню с путями к файлам:
-            foreach(var obj in stackPaths)
+            Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
-                notifyIcon.ContextMenu.Items.Remove(obj.Value.mi);
-            }
+                // Сначала очистить пункты меню с путями к файлам:
+                foreach (var obj in stackPaths)
+                {
+                    notifyIcon.ContextMenu.Items.Remove(obj.Value.mi);
+                }
 
-            // Заполнить новые пункты:
-            foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray() )
-            {
-                if( File.Exists(obj.Key) == true)
+                // Заполнить новые пункты:
+                foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray())
                 {
-                    MenuItem mi = obj.Value.mi;
-                    notifyIcon.ContextMenu.Items.Insert(0, mi);
+                    if (File.Exists(obj.Key) == true || Directory.Exists(obj.Key) == true)
+                    {
+                        MenuItem mi = obj.Value.mi;
+                        notifyIcon.ContextMenu.Items.Insert(0, mi);
+                    }
+                    else
+                    {
+                        stackPaths.Remove(obj.Key);
+                    }
                 }
-                else
+
+                // Максимальное количество файлов в списке должно быть не больше указанного максимального значения:
+                if (stackPaths.Count > log_contextmenu_size)
                 {
-                    stackPaths.Remove(obj.Key);
+                    // Удалить самый старый элемент из списка путей и из меню
+                    String first = stackPaths.OrderBy(d => d.Value.index).First().Key;
+
+                    MenuItemData _id = null;
+                    if (stackPaths.TryGetValue(first, out _id))
+                    {
+                        notifyIcon.ContextMenu.Items.Remove(_id.mi);
+                    }
+                    stackPaths.Remove(first);
                 }
-            }
+            });
         }
 
         private static TaskbarIcon notifyIcon=null;
@@ -229,7 +250,8 @@ namespace Stroiproject
 
             base.OnStartup(e);
 
-            /* Пыьаюсь выяснить возможность писать в каталог. Пока безрезультатно. Программа валится при запуске, если у пользователя в каталоге запуска недостаточно прав.
+            /* TODO: Выяснить почему валится программы при запуске из каталога, в котором у пользователя недостаточно разрешений?
+             * Пытаюсь выяснить возможность писать в каталог. Пока безрезультатно. Программа валится при запуске, если у пользователя в каталоге запуска недостаточно прав.
             String exeFilePath = getExeFilePath();
             String appFolder = System.IO.Path.GetDirectoryName(exeFilePath);
             if(HasWritePermission(appFolder) == false)
@@ -241,7 +263,6 @@ namespace Stroiproject
                 return;
             }
             //*/
-
 
             notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
@@ -256,14 +277,16 @@ namespace Stroiproject
         public static String getIniFilePath()
         {
             String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
-            iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-            iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+            string exe_file = typeof(Stroiproject.App).Assembly.Location; // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
+            //iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            iniFilePath = System.IO.Path.GetDirectoryName(exe_file) + "\\" + System.IO.Path.GetFileNameWithoutExtension(exe_file) + ".ini";
             return iniFilePath;
         }
         public static String getExeFilePath()
         {
-            String exeFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
-            exeFilePath = Process.GetCurrentProcess().MainModule.FileName;
+            // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
+            String exeFilePath = typeof(Stroiproject.App).Assembly.Location; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+            //exeFilePath = Process.GetCurrentProcess().MainModule.FileName;
             return exeFilePath;
         }
 
@@ -603,7 +626,7 @@ namespace Stroiproject
                         mi.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 0, 0, 255));
                     }
                     //*/
-                    mi.ToolTip = _path;
+                    mi.ToolTip = "Go to "+_path;
                     mi.Command = CustomRoutedCommand;
                     mi.CommandParameter = _path;
 
@@ -612,7 +635,15 @@ namespace Stroiproject
                     // Загрузить иконку файла в меню: http://stackoverflow.com/questions/94456/load-a-wpf-bitmapimage-from-a-system-drawing-bitmap?answertab=votes#tab-top
                     // Как-то зараза не грузится простым присваиванием.
                     String file_ext = Path.GetExtension(_path);
-                    Icon mi_icon = getIconByExt(file_ext);
+                    Icon mi_icon=null;
+                    try
+                    {
+                        mi_icon = Icon.ExtractAssociatedIcon(_path);// getIconByExt(file_ext);
+                    }
+                    catch (System.IO.FileNotFoundException ex)
+                    {
+                    }
+
                     if(mi_icon != null)
                     {
                         BitmapImage bitmapImage = null;
@@ -635,19 +666,6 @@ namespace Stroiproject
                     stackPaths.Add(_path, id);
                     notifyIcon.ContextMenu.Items.Insert(0, id.mi);
 
-                    // Максимальное количество файлов в списке:
-                    if (stackPaths.Count > log_contextmenu_size)
-                    {
-                        // Удалить самый старый элемент из списка путей и из меню
-                        String first = stackPaths.OrderBy(d => d.Value.index).First().Key;
-
-                        MenuItemData _id = null;
-                        if (stackPaths.TryGetValue(first, out _id))
-                        {
-                            notifyIcon.ContextMenu.Items.Remove(_id.mi);
-                        }
-                        stackPaths.Remove(first);
-                    }
                     reloadCustomMenuItems();
                 }
             });
@@ -691,47 +709,59 @@ namespace Stroiproject
 
         private static void OnChanged(object source, FileSystemEventArgs e)
         {
-            bool bool_path_is_file = true;
-            if(e.ChangeType == WatcherChangeTypes.Deleted) // Любой удаляемый элемент можно удалять по-одному, т.к. файлы всегда удаляются раньше каталогов, то в логах к моменту удаления каталогов всё содержимое уже должно быть удалено.
+            if(e.ChangeType == WatcherChangeTypes.Deleted)
             {
-                if (stackPaths.ContainsKey(e.FullPath) == true)  // для экономии времени
+                if (stackPaths.ContainsKey(e.FullPath) == true)
                 {
-                    removePathFromDictionary(e.FullPath);
-                    return;
+                    reloadCustomMenuItems();
                 }
-            }
-            else
-            {
-                try
-                {
-                    // Проверить о чём идёт речь - о каталоге или о файле:
-                    bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
-                }
-                catch (System.UnauthorizedAccessException ex)
-                {
-                    // TODO: В дальнейшем надо подумать как на них реагировать.
-                }
+                return;
             }
 
-            // Если изменяемым является только каталог, но при этом его не удаляют, то не регистрировать это изменение.
+            bool bool_path_is_file = true;
+            try
+            {
+                // Проверить о чём идёт речь - о каталоге или о файле:
+                bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
+            }
+            catch(Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
+            {
+                // TODO: В дальнейшем надо подумать как на них реагировать.
+                reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
+                return;
+            }
+
+            // Если изменяемым является только каталог, то не регистрировать это изменение.
             // Я заметил возникновение этого события, когда я меняю что-то непосредственно в подкаталоге 
             // (например, переименовываю его подфайл или подкаталог)
-            if ( bool_path_is_file==false && e.ChangeType != WatcherChangeTypes.Deleted)
+            // Не регистрировать изменения каталога (это не переименование)
+            if ( bool_path_is_file==false)
             {
                 return;
             }
 
-            // Проверить, а не начинается ли каталог с исключения (неважно, что это файл или каталог):
+            // Проверить, а не начинается ли путь с исключения:
             for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
             {
-                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true)
+                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
+                        (
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")=="" ||
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0]==Path.DirectorySeparatorChar
+                        )
+                    )
                 {
                     return;
                 }
             }
 
+
             if (bool_path_is_file == true)
             {
+                String file_name = Path.GetFileName(e.FullPath);
+                if (re_extensions.IsMatch(file_name) == false)
+                {
+                    return;
+                }
                 // Проверить, а не начинается ли имя файла с исключения:
                 for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
                 {
@@ -741,22 +771,7 @@ namespace Stroiproject
                     }
                 }
             }
-
-            //if (Regex.IsMatch(e.FullPath, extensions, RegexOptions.IgnoreCase))
-            if (bool_path_is_file == true && re_extensions.IsMatch(e.FullPath) || bool_path_is_file == false)
-            {
-                // Console.WriteLine("watched file type changed.");
-                // Specify what is done when a file is changed, created, or deleted.
-                // Console.WriteLine("File: " + e.FullPath + " " + e.ChangeType);
-                if (e.ChangeType == WatcherChangeTypes.Deleted)
-                {
-                    removePathFromDictionary(e.FullPath);
-                }
-                else
-                {
-                    appendPathToDictionary(e.FullPath, e.ChangeType);
-                }
-            }
+            appendPathToDictionary(e.FullPath, e.ChangeType);
         }
 
         private static void OnRenamed(object source, RenamedEventArgs e)
@@ -767,53 +782,48 @@ namespace Stroiproject
                 // Проверить о чём идёт речь - о каталоге или о файле:
                 bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
             }
-            catch (System.UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
             {
                 // TODO: В дальнейшем надо подумать как на них реагировать.
+                reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
+                return;
             }
 
-            // Проверить, а не начинается ли каталог с исключения:
-            bool exceptionFullPath = false;
-            for(int i=0; i<= arr_folders_for_exceptions.Count-1; i++)
+            // Проверить, а не начинается ли путь с исключения:
+            for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
             {
-                if( e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i))==true)
+                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
+                        (
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "") == "" ||
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
+                        )
+                    )
                 {
-                    exceptionFullPath=true;
-                    break;
+                    return;
                 }
             }
-            bool exceptionFileNameFullPath = false;
-            // Каталог не надо проверять на исключения имён файлов.
+
+            // Проверить, а не является ли расширение наблюдаемым?
             if (bool_path_is_file == true)
             {
+                String file_name = Path.GetFileName(e.FullPath);
+
+                // Проверить, а не начинается ли имя файла с исключения для имён файлов:
                 for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
                 {
-                    if (System.IO.Path.GetFileNameWithoutExtension(e.FullPath).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
+                    if (file_name.StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
                     {
-                        exceptionFileNameFullPath = true;
-                        break;
+                        return;
                     }
                 }
+
+                if (re_extensions.IsMatch(file_name) == false)
+                {
+                    return;
+                }
             }
 
-            if( bool_path_is_file && (re_extensions.IsMatch(e.FullPath) || re_extensions.IsMatch(e.OldFullPath)) || bool_path_is_file==false )
-            {
-                removePathFromDictionary(e.OldFullPath);
-                //  А если путь является каталогом, то переименовать пути, которые являются подкаталогами:
-                if(bool_path_is_file == false)
-                {
-
-                }
-                if ( bool_path_is_file && exceptionFullPath==false && exceptionFileNameFullPath==false && re_extensions.IsMatch(e.FullPath))
-                {
-                    appendPathToDictionary(e.FullPath, e.ChangeType);
-                }
-                else if(bool_path_is_file == false)
-                {
-                    renamePathFromDictionary(e.OldFullPath, e.FullPath, e.ChangeType);
-                    appendPathToDictionary(e.FullPath, e.ChangeType);
-                }
-            }
+            appendPathToDictionary(e.FullPath, e.ChangeType);
         }
 
         // Конец параметров для отслеживания изменений в файловой системе. =======================================
@@ -1096,6 +1106,181 @@ namespace Stroiproject
             }
             return Allow && !Deny;
         }
+
+        //*  Для тестов над регистрацией компонента для контекстного меню директория - чтобы добавить исключения каталогов через контекстно меню проводника windows. Пока эти функции регистрации не работают. Не понимаю в чём дело.
+        public static void registerDLL(string dllPath)
+        {
+            try
+            {
+                if (!File.Exists(dllPath))
+                    return;
+                Assembly asm = Assembly.LoadFile(dllPath);
+                var reg = new RegistrationServices();
+
+                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
+                // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
+                // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
+
+                if (reg.RegisterAssembly(asm, AssemblyRegistrationFlags.SetCodeBase))
+                {
+                    MessageBox.Show("Registered!");
+                }
+                else
+                {
+                    MessageBox.Show("Not Registered!");
+                }
+
+                /*
+                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
+                // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
+                // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
+                string regasmPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory() + @"regasm.exe";
+                string regasm_params = " /codebase \"" + dllPath + "\"";
+
+                var proc = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = regasmPath,
+                        Arguments = regasm_params,
+                        //StandardOutputEncoding = Encoding.GetEncoding("ibm850"), //Encoding.GetEncoding(850), //System.Text.Encoding.UTF8,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = false
+                    }
+                };
+                proc.Start();
+                string line = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit();
+                if(proc.ExitCode == 0)
+                {
+                    notifyIcon.ShowBalloonTip("Регистрация выполнена", "Проверьте контекстное меню каталога\nРезультат выполнения команды: "+proc.ExitCode, BalloonIcon.Info);
+                }
+                else
+                {
+                    notifyIcon.ShowBalloonTip("Регистрация не выполнена", "Код выполнения команды: " + proc.ExitCode, BalloonIcon.Error);
+                }
+                */
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        public static void unregisterDLL(string dllPath)
+        {
+            try
+            {
+                if (!File.Exists(dllPath))
+                    return;
+                Assembly asm = Assembly.LoadFile(dllPath);
+                var reg = new RegistrationServices();
+
+                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
+                // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
+                // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
+
+                if (reg.UnregisterAssembly(asm))
+                {
+                    MessageBox.Show("UnRegistered!");
+                }
+                else
+                {
+                    MessageBox.Show("Not UnRegistered!");
+                }
+
+                //string regasmPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory() + @"regasm.exe";
+                //string regasm_params = "/u \"" + dllPath + "\"";
+                //System.Diagnostics.Process.Start(regasmPath, regasm_params);
+                //MessageBox.Show("UnRegistered!");
+                //notifyIcon.ShowBalloonTip("Регистрация отменена", "Проверьте отсутствие элемента в контекстном меню каталога", BalloonIcon.Info);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        //*/
+
+        /* Для тестов над toasts для Windows 10
+        public static void TestToast()
+        {
+            // In a real app, these would be initialized with actual data
+            string from = "Jennifer Parker";
+            string subject = "Photos from our trip";
+            string body = "Check out these awesome photos I took while in New Zealand!";
+
+
+            // Construct the tile content
+            TileContent content = new TileContent()
+            {
+                Visual = new TileVisual()
+                {
+                    TileMedium = new TileBinding()
+                    {
+                        Content = new TileBindingContentAdaptive()
+                        {
+                            Children =
+                                            {
+                                                new TileText()
+                                                {
+                                                    Text = from
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = subject,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = body,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                }
+                                            }
+                        }
+                    },
+
+                    TileWide = new TileBinding()
+                    {
+                        Content = new TileBindingContentAdaptive()
+                        {
+                            Children =
+                                            {
+                                                new TileText()
+                                                {
+                                                    Text = from,
+                                                    Style = TileTextStyle.Subtitle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = subject,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = body,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                }
+                                            }
+                        }
+                    }
+                }
+            };
+
+            Windows.Data.Xml.Dom.XmlDocument xml_doc = new Windows.Data.Xml.Dom.XmlDocument();
+            xml_doc.LoadXml(content.GetContent());
+            var notification = new TileNotification(xml_doc);
+
+            String APP_ID = "Microsoft.Samples.DesktopToastsSample";
+            ToastNotification toast = new ToastNotification(xml_doc);
+            ToastNotificationManager.CreateToastNotifier(APP_ID).Show(toast);
+        }
+        //*/
     }
 }
 

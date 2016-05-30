@@ -20,6 +20,9 @@ using Stroiproject;
 using Microsoft.Win32;
 using IniParser;
 
+//using Windows.UI.Notifications;
+//using NotificationsExtensions.Tiles; // NotificationsExtensions.Win10
+
 namespace Stroiproject
 {
     class NotifyIconViewModel : INotifyPropertyChanged
@@ -191,6 +194,125 @@ namespace Stroiproject
                 };
             }
         }
+
+        public ICommand RegisterWindowsExplorerContextMenu
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        App.registerDLL(App.getExeFilePath());
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand UnRegisterWindowsExplorerContextMenu
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        App.unregisterDLL(App.getExeFilePath());
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        /*
+        public ICommand TestToast
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        // In a real app, these would be initialized with actual data
+                        string from = "Jennifer Parker";
+                        string subject = "Photos from our trip";
+                        string body = "Check out these awesome photos I took while in New Zealand!";
+
+
+                        // Construct the tile content
+                        TileContent content = new TileContent()
+                        {
+                            Visual = new TileVisual()
+                            {
+                                TileMedium = new TileBinding()
+                                {
+                                    Content = new TileBindingContentAdaptive()
+                                    {
+                                        Children =
+                                            {
+                                                new TileText()
+                                                {
+                                                    Text = from
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = subject,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = body,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                }
+                                            }
+                                    }
+                                },
+
+                                TileWide = new TileBinding()
+                                { 
+                                    Content = new TileBindingContentAdaptive()
+                                    {
+                                        Children =
+                                            {
+                                                new TileText()
+                                                {
+                                                    Text = from,
+                                                    Style = TileTextStyle.Subtitle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = subject,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                },
+
+                                                new TileText()
+                                                {
+                                                    Text = body,
+                                                    Style = TileTextStyle.CaptionSubtle
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                        };
+
+                        Windows.Data.Xml.Dom.XmlDocument xml_doc = new Windows.Data.Xml.Dom.XmlDocument();
+                        xml_doc.LoadXml(content.GetContent());
+                        //var notification = new TileNotification( xml_doc );
+                        String APP_ID = "Microsoft.Samples.DesktopToastsSample";
+                        ToastNotification toast = new ToastNotification(xml_doc);
+                        ToastNotificationManager.CreateToastNotifier(APP_ID).Show(toast);
+
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+        //*/
 
         public ICommand ExitApplicationCommand
         {

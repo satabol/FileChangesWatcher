@@ -38,19 +38,19 @@
                 </MenuItem.Icon>
             </MenuItem>
             <!--
+            -->
             <MenuItem Header="Help" Command="{Binding OpenHelp}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
-            -->
             <!--
-            -->
             <MenuItem Header="Home page" Command="{Binding OpenHomePage}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+            -->
             <!--
             <MenuItem Header="Share me to ..." Command="{Binding ShareMeByEmail}">
                 <MenuItem.Icon>
@@ -60,9 +60,26 @@
             -->
         </MenuItem>
 
-        <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}">
+        <MenuItem Header="Test Register Windows Explorer Context Menu" Command="{Binding RegisterWindowsExplorerContextMenu}">
+            <MenuItem.Icon>
+                <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="Test UnRegister Windows Explorer Context Menu" Command="{Binding UnRegisterWindowsExplorerContextMenu}">
+            <MenuItem.Icon>
+                <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        <!--
+        <MenuItem Header="Test toast" Command="{Binding TestToast}">
             <MenuItem.Icon>
                 <Image Source="/Icons/FileWatcher.ico"   Width="16" Height="16"/>
+            </MenuItem.Icon>
+        </MenuItem>
+        -->
+        <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}">
+            <MenuItem.Icon>
+                <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>
         </MenuItem>
     </ContextMenu>
@@ -70,7 +87,7 @@
 
     <!-- the application's NotifyIcon - started from App.xaml.cs. Declares its own view model. -->
     <tb:TaskbarIcon x:Key="NotifyIcon"
-                    IconSource="/Icons/FileWatcher.ico"
+                    IconSource="/Icons/FileChangesWatcher.ico"
                     ToolTipText="FileChangesWatcher. Right-click for menu"
                     DoubleClickCommand="{Binding ShowWindowCommand}"
                     ContextMenu="{StaticResource SysTrayMenu}">
