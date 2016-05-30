@@ -44,11 +44,8 @@ namespace FileChangesWatcher
             //  Create a 'count lines' item.
             itemCountLines = new ToolStripMenuItem
             {
-                Text = "Exclude folder from FileChangesWatcher",
-                
+                Text = "FileChangesWatcher",
             };
-            //itemCountLines.Image = Image.FromFile("/Icons/FileWatcher.ico");
-            //itemCountLines.Image = Image.FromFile(""); ;// Icon.ExtractAssociatedIcon(Stroiproject.App.getExeFilePath()).ToBitmap();
             itemCountLines.Image = Resources.FileChangesWatcher_16x16.ToBitmap();
 
             CreateSubMenuFileChangesWatcher(itemCountLines);
@@ -108,60 +105,88 @@ namespace FileChangesWatcher
                     }
 
                     item = new ToolStripMenuItem();
+                    String iniFilePath = Stroiproject.App.getIniFilePath();
+
+                    FileIniDataParser fileIniDataParser = new FileIniDataParser();
+                    IniParser.Model.IniData data; // = new IniParser.Model.IniData();
+                    data = fileIniDataParser.ReadFile(iniFilePath);
                     if (bool_path_is_file == false)
                     {
-                        item.Text = "Add path \"" + path + "\" to FoldersForExceptions Section";
-                        item.Click += (sender, args) =>
-                        {
-                            // Добавить этот каталог в исключения:
-                            //String exe_file = typeof(ContextMenuForFolders).Assembly.Location;
-                            String iniFilePath = Stroiproject.App.getIniFilePath();
 
-                            FileIniDataParser fileIniDataParser = new FileIniDataParser();
-                            IniParser.Model.IniData data; // = new IniParser.Model.IniData();
-                            data = fileIniDataParser.ReadFile(iniFilePath);
-                            for (int i = 0; i <= 100000; i++)
+                        bool bool_folder_is_in_Section = false;
+                        // Проверить, что каталога ещё нет в исключениях:
+                        for (int i = 0; i <= data.Sections["FoldersForExceptions"].Count - 1; i++)
+                        {
+                            String folder = data.Sections["FoldersForExceptions"].ElementAt(i).Value;
+                            if (folder.Equals(path) == true)
                             {
-                                string new_key = "folder" + i;
-                                if (data.Sections["FoldersForExceptions"].ContainsKey(new_key) == false)
-                                {
-                                    data.Sections["FoldersForExceptions"].AddKey(new_key, path);
-                                    fileIniDataParser.WriteFile(iniFilePath, data);
-                                    MessageBox.Show("Folder\n \"" + path + "\"\n is append to FoldersForExceptions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                    break;
-                                }
+                                bool_folder_is_in_Section = true;
+                                break;
                             }
-                            //Stroiproject.App.initApplication(null);
-                            //System.Diagnostics.Process.Start("explorer.exe", path);
-                        };
+                        }
+
+                        if(bool_folder_is_in_Section==true)
+                        {
+                            item.Text = "path \"" + path + "\" is in FoldersForExceptions Section already";
+                            item.Enabled = false;
+                        }
+                        else
+                        {
+                            item.Text = "Add path \"" + path + "\" to FoldersForExceptions Section";
+                            item.Click += (sender, args) =>
+                            {
+                                // Добавить этот каталог в исключения:
+                                data = fileIniDataParser.ReadFile(iniFilePath);
+                                for (int i = 0; i <= 100000; i++)
+                                {
+                                    string new_key = "folder" + i;
+                                    if (data.Sections["FoldersForExceptions"].ContainsKey(new_key) == false)
+                                    {
+                                        data.Sections["FoldersForExceptions"].AddKey(new_key, path);
+                                        fileIniDataParser.WriteFile(iniFilePath, data);
+                                        MessageBox.Show("Folder\n \"" + path + "\"\n is append to FoldersForExceptions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                        break;
+                                    }
+                                }
+                            };
+                        }
                     }
                     else
                     {
-                        string ext = Path.GetExtension(path);
-                        item.Text = "Add \"" + ext + "\" to Extensions Section";
-                        item.Click += (sender, args) =>
-                        {
-                            // Добавить этот каталог в исключения:
-                            //String exe_file = typeof(ContextMenuForFolders).Assembly.Location;
-                            String iniFilePath = Stroiproject.App.getIniFilePath();
+                        string ext = Path.GetExtension(path).ToLower();
 
-                            FileIniDataParser fileIniDataParser = new FileIniDataParser();
-                            IniParser.Model.IniData data; // = new IniParser.Model.IniData();
-                            data = fileIniDataParser.ReadFile(iniFilePath);
-                            for (int i = 0; i <= 100000; i++)
+                        bool bool_folder_is_in_Section = false;
+                        // Проверить, что расширение не наблюдается приложением:
+                        if (Stroiproject.App.getExtensionsRegEx(data).IsMatch(ext) == true)
+                        {
+                            bool_folder_is_in_Section = true;
+                        }
+
+                        if (bool_folder_is_in_Section == true)
+                        {
+                            item.Text = "extension \"" + ext + "\" is in Extensions Section already";
+                            item.Enabled = false;
+                        }
+                        else
+                        {
+                            item.Text = "Add \"" + ext + "\" to Extensions Section";
+                            item.Click += (sender, args) =>
                             {
-                                string new_key = "extension" + i;
-                                if (data.Sections["Extensions"].ContainsKey(new_key) == false)
+                                // Добавить расширение в исключения:
+                                data = fileIniDataParser.ReadFile(iniFilePath);
+                                for (int i = 0; i <= 100000; i++)
                                 {
-                                    data.Sections["Extensions"].AddKey(new_key, ext);
-                                    fileIniDataParser.WriteFile(iniFilePath, data);
-                                    MessageBox.Show("Extension \n \"" + ext + "\"\n is append to Extensions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                    break;
+                                    string new_key = "extension" + i;
+                                    if (data.Sections["Extensions"].ContainsKey(new_key) == false)
+                                    {
+                                        data.Sections["Extensions"].AddKey(new_key, ext);
+                                        fileIniDataParser.WriteFile(iniFilePath, data);
+                                        MessageBox.Show("Extension \n \"" + ext + "\"\n is append to Extensions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                        break;
+                                    }
                                 }
-                            }
-                            //Stroiproject.App.initApplication(null);
-                            //System.Diagnostics.Process.Start("explorer.exe", path);
-                        };
+                            };
+                        }
                     }
                     menu.DropDownItems.Add(item);
                 }
@@ -171,15 +196,6 @@ namespace FileChangesWatcher
                 strError += " Exception:" + e.Message;
                 Console.WriteLine("Something wrong with path: " + path + "\n" + e.ToString());
             }
-
-            if (item == null)
-            {
-                item = new ToolStripMenuItem();
-                item.Text = "no remote branches for path " + (path == null ? "null" : path); // +", " + strError;
-                menu.DropDownItems.Add(item);
-            }
-            //menu.ShowDropDown();
-            //MessageBox.Show("Remote repositories:\n" + sb.ToString());
         }
     }
 

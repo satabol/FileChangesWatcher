@@ -37,20 +37,26 @@
                     <Image Source="/Icons/home_folder.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+
+            <MenuItem Header="Register Windows Explorer Context Menu (Admin)" Command="{Binding RegisterWindowsExplorerContextMenu}">
+            </MenuItem>
+            <MenuItem Header="UnRegister Windows Explorer Context Menu (Admin)" Command="{Binding UnRegisterWindowsExplorerContextMenu}">
+            </MenuItem>
+
             <!--
-            -->
             <MenuItem Header="Help" Command="{Binding OpenHelp}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+            -->
             <!--
+            -->
             <MenuItem Header="Home page" Command="{Binding OpenHomePage}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
-            -->
             <!--
             <MenuItem Header="Share me to ..." Command="{Binding ShareMeByEmail}">
                 <MenuItem.Icon>
@@ -60,16 +66,6 @@
             -->
         </MenuItem>
 
-        <MenuItem Header="Test Register Windows Explorer Context Menu" Command="{Binding RegisterWindowsExplorerContextMenu}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
-        <MenuItem Header="Test UnRegister Windows Explorer Context Menu" Command="{Binding UnRegisterWindowsExplorerContextMenu}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
         <!--
         <MenuItem Header="Test toast" Command="{Binding TestToast}">
             <MenuItem.Icon>

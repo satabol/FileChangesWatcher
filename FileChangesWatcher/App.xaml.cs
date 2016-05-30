@@ -1,24 +1,17 @@
 ﻿using System;
-using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Input;
-using System.Windows.Threading;
-using System.Management;
 
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
-using System.Windows.Interop;
 
 using System.Reflection;
-using System.Globalization;
 using System.IO;
 using System.Windows.Media.Imaging;
-using System.Windows.Media;
 
 using System.Web;
 using System.Drawing;
@@ -26,9 +19,9 @@ using System.Drawing.Imaging;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
-using System.Collections;
 using IniParser;
 using System.Security.AccessControl;
+using System.Security.Principal;
 //using NotificationsExtensions.Tiles;
 
 namespace Stroiproject
@@ -175,7 +168,7 @@ namespace Stroiproject
             {
                 // TODO: В дальнейшем надо подумать как на них реагировать.
                 //reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
-                notifyIcon.ShowBalloonTip("cannot open explorer", ex.Message, BalloonIcon.Error);
+                _notifyIcon.ShowBalloonTip("cannot open explorer", ex.Message, BalloonIcon.Error);
                 return;
             }
 
@@ -204,7 +197,7 @@ namespace Stroiproject
                 // Сначала очистить пункты меню с путями к файлам:
                 foreach (var obj in stackPaths)
                 {
-                    notifyIcon.ContextMenu.Items.Remove(obj.Value.mi);
+                    _notifyIcon.ContextMenu.Items.Remove(obj.Value.mi);
                 }
 
                 // Заполнить новые пункты:
@@ -213,7 +206,7 @@ namespace Stroiproject
                     if (File.Exists(obj.Key) == true || Directory.Exists(obj.Key) == true)
                     {
                         MenuItem mi = obj.Value.mi;
-                        notifyIcon.ContextMenu.Items.Insert(0, mi);
+                        _notifyIcon.ContextMenu.Items.Insert(0, mi);
                     }
                     else
                     {
@@ -230,14 +223,22 @@ namespace Stroiproject
                     MenuItemData _id = null;
                     if (stackPaths.TryGetValue(first, out _id))
                     {
-                        notifyIcon.ContextMenu.Items.Remove(_id.mi);
+                        _notifyIcon.ContextMenu.Items.Remove(_id.mi);
                     }
                     stackPaths.Remove(first);
                 }
             });
         }
 
-        private static TaskbarIcon notifyIcon=null;
+        private static TaskbarIcon _notifyIcon=null;
+        public static TaskbarIcon NotifyIcon
+        {
+            get
+            {
+                return _notifyIcon;
+            }
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             Process proc = Process.GetCurrentProcess();
@@ -264,13 +265,12 @@ namespace Stroiproject
             }
             //*/
 
-            notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
+            _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
             //notifyIcon.ContextMenu.Items.Insert(0, new Separator() );  // http://stackoverflow.com/questions/4823760/how-to-add-horizontal-separator-in-a-dynamically-created-contextmenu
             CommandBinding customCommandBinding = new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand);
-            notifyIcon.ContextMenu.CommandBindings.Add(customCommandBinding);
+            _notifyIcon.ContextMenu.CommandBindings.Add(customCommandBinding);
 
-            ht_icons = GetFileTypeAndIcon();
             initApplication(e);
         }
 
@@ -415,12 +415,12 @@ namespace Stroiproject
                 try
                 {
                     data = fileIniDataParser.ReadFile(iniFilePath);
-                    notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
+                    _notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
                 }
                 catch (IniParser.Exceptions.ParsingException ex)
                 {
-                    notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu, please.";
-                    notifyIcon.ShowBalloonTip("Error in ini-file. Open settings in menu, please", ""+ex.Message + "", BalloonIcon.Error);
+                    _notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu, please.";
+                    _notifyIcon.ShowBalloonTip("Error in ini-file. Open settings in menu, please", ""+ex.Message + "", BalloonIcon.Error);
                     /*
                     if(System.Windows.MessageBox.Show("Error in ini-file:\n" + ex.Message+"\n\n Please - correct file or delete it for recreation.\n Application exit!\n\nOpen ini file before exit?", "Alert!", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
@@ -456,27 +456,7 @@ namespace Stroiproject
                 Console.WriteLine("Ошибка преобразования значения log_contextmenu_size в число");
             }
 
-            // Определить список расширений, за которыми будет следить программа:
-            List<string> arr_extensions_for_filter = new List<String>();
-            String _extensions = "";
-            Regex re = new Regex("\\.");
-            for (int i = 0; i <= data.Sections["Extensions"].Count - 1; i++)
-            {
-                String folder = data.Sections["Extensions"].ElementAt(i).Value;
-                folder = (new Regex("(^|)|(|$)")).Replace(folder, "");
-                if (folder.Length > 0)
-                {
-                    if (_extensions.Length > 0)
-                    {
-                        _extensions += "|";
-                    }
-                    _extensions += re.Replace(folder, "\\.");
-                }
-            }
-            _extensions = @".*(" + _extensions + ")$";
-            _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
-            extensions = _extensions;
-            re_extensions = new Regex(extensions, RegexOptions.IgnoreCase);
+            _re_extensions = getExtensionsRegEx(data);
 
             // Определить список каталогов, за которыми надо наблюдать:
             ///*
@@ -531,8 +511,32 @@ namespace Stroiproject
             }
             else
             {
-                notifyIcon.ShowBalloonTip("Info", "No watching for folders. Set folders correctly.", BalloonIcon.Info);
+                _notifyIcon.ShowBalloonTip("Info", "No watching for folders. Set folders correctly.", BalloonIcon.Info);
             }
+        }
+
+        public static Regex getExtensionsRegEx(IniParser.Model.IniData data)
+        {
+            List<string> arr_extensions_for_filter = new List<String>();
+            String _extensions = "";
+            Regex re = new Regex("\\.");
+            for (int i = 0; i <= data.Sections["Extensions"].Count - 1; i++)
+            {
+                String folder = data.Sections["Extensions"].ElementAt(i).Value;
+                folder = (new Regex("(^|)|(|$)")).Replace(folder, "");
+                if (folder.Length > 0)
+                {
+                    if (_extensions.Length > 0)
+                    {
+                        _extensions += "|";
+                    }
+                    _extensions += re.Replace(folder, "\\.");
+                }
+            }
+            _extensions = @".*(" + _extensions + ")$";
+            _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
+            
+            return new Regex(_extensions, RegexOptions.IgnoreCase);
         }
 
         static List<FileSystemWatcher> watchers = new List<FileSystemWatcher>();
@@ -568,15 +572,20 @@ namespace Stroiproject
                 watcher.EnableRaisingEvents = true;
             }
             //notifyIcon.ContextMenu.Opacity = 0.5;
-            notifyIcon.ShowBalloonTip("Info", "Watching folders: \n" + String.Join("\n",  _paths.ToArray() ), BalloonIcon.Info);
+            _notifyIcon.ShowBalloonTip("Info", "Watching folders: \n" + String.Join("\n",  _paths.ToArray() ), BalloonIcon.Info);
         }
         
         // Параметры для отлеживания изменений в файлах: ========================================
 
-        // https://lucidworks.com/blog/2009/09/02/content-extraction-with-tika/
-        // static String extentions = @".*(\.tar|\.jar|\.zip|\.bzip2|\.gz|\.tgz|\.doc|\.xls|\.ppt|\.rtf|\.pdf|\.html|\.xhtml|\.txt|\.bmp|\.gif|\.png|\.jpeg|\.tiff|\.mp3|\.aiff|\.au|\.midi|\.wav|\.pst|\.xml|\.class|\.java)$";
-        static String extensions = null;
-        static Regex re_extensions = null;
+        static Regex _re_extensions = null;
+        public static Regex re_extensions
+        {
+            get
+            {
+                return _re_extensions;
+            }
+        }
+
         // Список каталогов, которые надо исключить из вывода:
         static List<String> arr_folders_for_exceptions = null;
         static List<String> arr_files_for_exceptions = null;
@@ -590,7 +599,7 @@ namespace Stroiproject
             String str = _path;
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
-                notifyIcon.ShowBalloonTip("", _path, BalloonIcon.Info);
+                _notifyIcon.ShowBalloonTip("", _path, BalloonIcon.Info);
                 // Если такой путь уже есть в логе, то нужно его удалить. Это позволит переместить элемент на верх списка.
                 if (stackPaths.ContainsKey(_path) == true)
                 {
@@ -664,7 +673,7 @@ namespace Stroiproject
                     }
                     MenuItemData id = new MenuItemData(mi, max_value + 1);
                     stackPaths.Add(_path, id);
-                    notifyIcon.ContextMenu.Items.Insert(0, id.mi);
+                    _notifyIcon.ContextMenu.Items.Insert(0, id.mi);
 
                     reloadCustomMenuItems();
                 }
@@ -678,7 +687,7 @@ namespace Stroiproject
                 MenuItemData _id = null;
                 if (stackPaths.TryGetValue(_path, out _id))
                 {
-                    notifyIcon.ContextMenu.Items.Remove(_id.mi);
+                    _notifyIcon.ContextMenu.Items.Remove(_id.mi);
                     stackPaths.Remove(_path);
                     reloadCustomMenuItems();
                 }
@@ -688,7 +697,6 @@ namespace Stroiproject
         {
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
-                MenuItemData _id = null;
                 foreach( KeyValuePair<string, MenuItemData> mid in stackPaths.ToArray())
                 {
                     if(mid.Key.StartsWith(_old_path) == true)
@@ -758,7 +766,7 @@ namespace Stroiproject
             if (bool_path_is_file == true)
             {
                 String file_name = Path.GetFileName(e.FullPath);
-                if (re_extensions.IsMatch(file_name) == false)
+                if (_re_extensions.IsMatch(file_name) == false)
                 {
                     return;
                 }
@@ -817,7 +825,7 @@ namespace Stroiproject
                     }
                 }
 
-                if (re_extensions.IsMatch(file_name) == false)
+                if (_re_extensions.IsMatch(file_name) == false)
                 {
                     return;
                 }
@@ -830,243 +838,10 @@ namespace Stroiproject
 
         protected override void OnExit(ExitEventArgs e)
         {
-            notifyIcon.Dispose();
+            _notifyIcon.Dispose();
             base.OnExit(e);
         }
         
-        // Для извлечения иконок файлов: http://www.codeproject.com/Articles/29137/Get-Registered-File-Types-and-Their-Associated-Ico
-        [DllImport("shell32.dll", EntryPoint = "ExtractIconA",
-            CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
-        private static extern IntPtr ExtractIcon
-            (int hInst, string lpszExeFileName, int nIconIndex);
-
-        private static Hashtable ht_icons = null;
-        /// <summary>
-        /// Gets registered file types and their associated icon in the system.
-        /// </summary>
-        /// <returns>Returns a hash table which contains the file extension as keys, 
-        /// the icon file and param as values.</returns>
-        public static Hashtable GetFileTypeAndIcon()
-        {
-            try
-            {
-                // Create a registry key object to represent the 
-                // HKEY_CLASSES_ROOT registry section
-                RegistryKey rkRoot = Registry.ClassesRoot;
-                //Gets all sub keys' names.
-                string[] keyNames = rkRoot.GetSubKeyNames();
-                Hashtable iconsInfo = new Hashtable();
-                //Find the file icon.
-                foreach (string keyName in keyNames)
-                {
-                    if (String.IsNullOrEmpty(keyName))
-                        continue;
-                    int indexOfPoint = keyName.IndexOf(".");
-
-                    //If this key is not a file extension, .zip), skip it.
-                    if (indexOfPoint != 0)
-                        continue;
-                    RegistryKey rkFileType = rkRoot.OpenSubKey(keyName);
-                    if (rkFileType == null)
-                        continue;
-                    //Gets the default value of this key that 
-                    //contains the information of file type.
-                    object defaultValue = rkFileType.GetValue("");
-                    if (defaultValue == null)
-                        continue;
-                    //Go to the key that specifies the default icon 
-                    //associates with this file type.
-                    string defaultIcon = defaultValue.ToString() + "\\DefaultIcon";
-                    RegistryKey rkFileIcon = rkRoot.OpenSubKey(defaultIcon);
-                    if (rkFileIcon != null)
-                    {
-                        //Get the file contains the icon and the index of the icon in that file.
-                        object value = rkFileIcon.GetValue("");
-                        if (value != null)
-                        {
-                            //Clear all unnecessary " sign in the string to avoid error.
-                            string fileParam = value.ToString().Replace("\"", "");
-                            iconsInfo.Add(keyName, fileParam);
-                        }
-                        rkFileIcon.Close();
-                    }
-                    rkFileType.Close();
-                }
-                rkRoot.Close();
-                return iconsInfo;
-            }
-            catch (Exception exc)
-            {
-                throw exc;
-            }
-        }
-
-        /// <summary>
-        /// Shows the icon associates with a specific file type.
-        /// </summary>
-        /// <param name="fileType">The type of file (or file extension).</param>
-        private static Icon getIconByExt(string fileType)
-        {
-            Icon icon = null;
-            try
-            {
-                string fileAndParam = (ht_icons[fileType.ToLower()]).ToString();
-
-                if (String.IsNullOrEmpty(fileAndParam))
-                    return null;
-
-
-                icon = ExtractIconFromFile(fileAndParam, false);
-            }
-            catch (Exception exc)
-            {
-                //throw exc;
-            }
-            return icon;
-        }
-
-        /// <summary>
-        /// Structure that encapsulates basic information of icon embedded in a file.
-        /// </summary>
-        public struct EmbeddedIconInfo
-        {
-            public string FileName;
-            public int IconIndex;
-        }
-
-        /// <summary>
-        /// Extract the icon from file.
-        /// <param name="fileAndParam">The params string, such as ex: 
-        ///    "C:\\Program Files\\NetMeeting\\conf.exe,1".</param>
-        /// <returns>This method always returns the large size of the icon 
-        ///    (may be 32x32 px).</returns>
-        public static Icon ExtractIconFromFile(string fileAndParam)
-        {
-            try
-            {
-                EmbeddedIconInfo embeddedIcon = getEmbeddedIconInfo(fileAndParam);
-
-                //Gets the handle of the icon.
-                IntPtr lIcon = ExtractIcon(0, embeddedIcon.FileName,
-                            embeddedIcon.IconIndex);
-
-                //Gets the real icon.
-                return Icon.FromHandle(lIcon);
-            }
-            catch (Exception exc)
-            {
-                throw exc;
-            }
-        }
-
-        [DllImport("shell32.dll", CharSet = CharSet.Auto)]
-        private static extern uint ExtractIconEx
-        (string szFileName, int nIconIndex, IntPtr[] phiconLarge, IntPtr[] phiconSmall, uint nIcons);
-
-        [DllImport("user32.dll", EntryPoint = "DestroyIcon", SetLastError = true)]
-        private static unsafe extern int DestroyIcon(IntPtr hIcon);
-        /// <summary>
-        /// Extract the icon from file.
-        /// </summary>
-        /// <param name="fileAndParam">The params string, such as ex: 
-        ///    "C:\\Program Files\\NetMeeting\\conf.exe,1".</param>
-        /// <param name="isLarge">Determines the returned icon is a large 
-        ///    (may be 32x32 px) or small icon (16x16 px).</param>
-        public static Icon ExtractIconFromFile(string fileAndParam, bool isLarge)
-        {
-            unsafe
-            {
-                uint readIconCount = 0;
-                IntPtr[] hDummy = new IntPtr[1] { IntPtr.Zero };
-                IntPtr[] hIconEx = new IntPtr[1] { IntPtr.Zero };
-
-                try
-                {
-                    EmbeddedIconInfo embeddedIcon =
-                        getEmbeddedIconInfo(fileAndParam);
-
-                    if (isLarge)
-                        readIconCount = ExtractIconEx
-                        (embeddedIcon.FileName, 0, hIconEx, hDummy, 1);
-                    else
-                        readIconCount = ExtractIconEx
-                        (embeddedIcon.FileName, 0, hDummy, hIconEx, 1);
-
-                    if (readIconCount > 0 && hIconEx[0] != IntPtr.Zero)
-                    {
-                        //Get first icon.
-                        Icon extractedIcon =
-                        (Icon)Icon.FromHandle(hIconEx[0]).Clone();
-
-                        return extractedIcon;
-                    }
-                    else //No icon read.
-                        return null;
-                }
-                catch (Exception exc)
-                {
-                    //Extract icon error.
-                    throw new ApplicationException
-                        ("Could not extract icon", exc);
-                }
-                finally
-                {
-                    //Release resources.
-                    foreach (IntPtr ptr in hIconEx)
-                        if (ptr != IntPtr.Zero)
-                            DestroyIcon(ptr);
-
-                    foreach (IntPtr ptr in hDummy)
-                        if (ptr != IntPtr.Zero)
-                            DestroyIcon(ptr);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Parses the parameters string to the structure of EmbeddedIconInfo.
-        /// </summary>
-        /// <param name="fileAndParam">The params string, such as ex: 
-        ///    "C:\\Program Files\\NetMeeting\\conf.exe,1".</param>
-        protected static EmbeddedIconInfo getEmbeddedIconInfo(string fileAndParam)
-        {
-            EmbeddedIconInfo embeddedIcon = new EmbeddedIconInfo();
-
-            if (String.IsNullOrEmpty(fileAndParam))
-                return embeddedIcon;
-
-            //Use to store the file contains icon.
-            string fileName = String.Empty;
-
-            //The index of the icon in the file.
-            int iconIndex = 0;
-            string iconIndexString = String.Empty;
-
-            int commaIndex = fileAndParam.IndexOf(",");
-            //if fileAndParam is some thing likes this: 
-            //"C:\\Program Files\\NetMeeting\\conf.exe,1".
-            if (commaIndex > 0)
-            {
-                fileName = fileAndParam.Substring(0, commaIndex);
-                iconIndexString = fileAndParam.Substring(commaIndex + 1);
-            }
-            else
-                fileName = fileAndParam;
-
-            if (!String.IsNullOrEmpty(iconIndexString))
-            {
-                //Get the index of icon.
-                iconIndex = int.Parse(iconIndexString);
-                if (iconIndex < 0)
-                    iconIndex = 0;  //To avoid the invalid index.
-            }
-
-            embeddedIcon.FileName = fileName;
-            embeddedIcon.IconIndex = iconIndex;
-
-            return embeddedIcon;
-        }
-
         public static bool HasWritePermission(string dir)
         {
             bool Allow = false;
@@ -1123,48 +898,19 @@ namespace Stroiproject
 
                 if (reg.RegisterAssembly(asm, AssemblyRegistrationFlags.SetCodeBase))
                 {
-                    MessageBox.Show("Registered!");
+                    //MessageBox.Show("Registered!");
+                    App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Successfully registered FileChangesWatcher in Windows Context Menu.", BalloonIcon.Info);
                 }
                 else
                 {
-                    MessageBox.Show("Not Registered!");
+                    //MessageBox.Show("Not Registered!");
+                    App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Failed registered FileChangesWatcher in Windows Context Menu.", BalloonIcon.Error);
                 }
-
-                /*
-                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
-                // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
-                // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
-                string regasmPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory() + @"regasm.exe";
-                string regasm_params = " /codebase \"" + dllPath + "\"";
-
-                var proc = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = regasmPath,
-                        Arguments = regasm_params,
-                        //StandardOutputEncoding = Encoding.GetEncoding("ibm850"), //Encoding.GetEncoding(850), //System.Text.Encoding.UTF8,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = false
-                    }
-                };
-                proc.Start();
-                string line = proc.StandardOutput.ReadToEnd();
-                proc.WaitForExit();
-                if(proc.ExitCode == 0)
-                {
-                    notifyIcon.ShowBalloonTip("Регистрация выполнена", "Проверьте контекстное меню каталога\nРезультат выполнения команды: "+proc.ExitCode, BalloonIcon.Info);
-                }
-                else
-                {
-                    notifyIcon.ShowBalloonTip("Регистрация не выполнена", "Код выполнения команды: " + proc.ExitCode, BalloonIcon.Error);
-                }
-                */
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                //MessageBox.Show(ex.Message);
+                App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Failed\n"+ex.Message, BalloonIcon.Error);
             }
         }
 
@@ -1183,25 +929,51 @@ namespace Stroiproject
 
                 if (reg.UnregisterAssembly(asm))
                 {
-                    MessageBox.Show("UnRegistered!");
+                    //MessageBox.Show("UnRegistered!");
+                    App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Successfully unregistered FileChangesWatcher in Windows Context Menu.", BalloonIcon.Info);
                 }
                 else
                 {
-                    MessageBox.Show("Not UnRegistered!");
+                    //MessageBox.Show("Not UnRegistered!");
+                    App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Failed unregistered FileChangesWatcher in Windows Context Menu.", BalloonIcon.Error);
                 }
-
-                //string regasmPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory() + @"regasm.exe";
-                //string regasm_params = "/u \"" + dllPath + "\"";
-                //System.Diagnostics.Process.Start(regasmPath, regasm_params);
-                //MessageBox.Show("UnRegistered!");
-                //notifyIcon.ShowBalloonTip("Регистрация отменена", "Проверьте отсутствие элемента в контекстном меню каталога", BalloonIcon.Info);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                //MessageBox.Show(ex.Message);
+                App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Failed\n" + ex.Message, BalloonIcon.Error);
             }
         }
         //*/
+
+        // http://stackoverflow.com/questions/1089046/in-net-c-test-if-process-has-administrative-privileges
+        public static bool IsUserAdministrator()
+        {
+            //bool value to hold our return value
+            bool isAdmin;
+            WindowsIdentity user = null;
+            try
+            {
+                //get the currently logged in user
+                user = WindowsIdentity.GetCurrent();
+                WindowsPrincipal principal = new WindowsPrincipal(user);
+                isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                isAdmin = false;
+            }
+            catch (Exception ex)
+            {
+                isAdmin = false;
+            }
+            finally
+            {
+                if (user != null)
+                    user.Dispose();
+            }
+            return isAdmin;
+        }
 
         /* Для тестов над toasts для Windows 10
         public static void TestToast()

@@ -58,6 +58,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DEBUGLOCAL|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -222,10 +223,6 @@
     <AssemblyOriginatorKeyFile>FileChangesWatcher.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Apex.WinForms, Version=1.6.0.0, Culture=neutral, PublicKeyToken=98d06957926c086d, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\Apex.WinForms.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Hardcodet.Wpf.TaskbarNotification, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.8\lib\net45\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
       <Private>True</Private>
@@ -234,36 +231,28 @@
       <HintPath>..\packages\ini-parser.2.2.4\lib\net20\INIFileParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ServerManager, Version=2.2.0.0, Culture=neutral, processorArchitecture=x86">
-      <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\ServerManager.exe</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="SharpShell, Version=2.2.0.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\SharpShell.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
+    <Reference Include="System.Drawing">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Net.Http">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Web">
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
     <Reference Include="WindowsBase" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PresentationFramework">
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -323,40 +312,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icons\search.ico" />
-    <Resource Include="Icons\search.mono.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\Logotip72-2.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\google.com-favicon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\yandex.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\lingvo.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\date_and_time.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\url.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icons\regestry.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\exit.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\enter.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\logotip72-2.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\multitran.gif" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
@@ -377,12 +335,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icons\youtube.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\EditText.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Icons\double_quotes.ico" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Icons\files.icons\" />

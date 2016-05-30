@@ -203,7 +203,15 @@ namespace Stroiproject
                 {
                     CommandAction = () =>
                     {
-                        App.registerDLL(App.getExeFilePath());
+                        if(Stroiproject.App.IsUserAdministrator() == true)
+                        {
+                            App.registerDLL(App.getExeFilePath());
+                        }
+                        else
+                        {
+                            //MessageBox.Show("Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Error on access to register FileChangesWatcher in Windows Context Menu. You have to be administrator", BalloonIcon.Error);
+                        }
                     },
                     CanExecuteFunc = () => true
                 };
@@ -218,7 +226,16 @@ namespace Stroiproject
                 {
                     CommandAction = () =>
                     {
-                        App.unregisterDLL(App.getExeFilePath());
+                        if (Stroiproject.App.IsUserAdministrator() == true)
+                        {
+                            App.unregisterDLL(App.getExeFilePath());
+                        }
+                        else
+                        {
+                            //MessageBox.Show( this, "Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                            //App.Sh
+                            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Error on access to register FileChangesWatcher in Windows Context Menu. You have to be administrator", BalloonIcon.Error);
+                        }
                     },
                     CanExecuteFunc = () => true
                 };
