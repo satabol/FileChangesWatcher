@@ -24,37 +24,8 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 //using NotificationsExtensions.Tiles;
 
-namespace Stroiproject
+namespace FileChangesWatcher
 {
-
-    // http://www.thomaslevesque.com/tag/clipboard/
-    [StructLayout(LayoutKind.Sequential, Pack = 2)]
-    struct BITMAPFILEHEADER
-    {
-        public static readonly short BM = 0x4d42; // BM
-
-        public short bfType;
-        public int bfSize;
-        public short bfReserved1;
-        public short bfReserved2;
-        public int bfOffBits;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    struct BITMAPINFOHEADER
-    {
-        public int biSize;
-        public int biWidth;
-        public int biHeight;
-        public short biPlanes;
-        public short biBitCount;
-        public int biCompression;
-        public int biSizeImage;
-        public int biXPelsPerMeter;
-        public int biYPelsPerMeter;
-        public int biClrUsed;
-        public int biClrImportant;
-    }
 
     /// <summary>
     /// Exposes the Mime Mapping method that Microsoft hid from us.
@@ -87,47 +58,7 @@ namespace Stroiproject
             return (string)_getMimeMappingMethod.Invoke(null /*static method*/, new[] { fileName });
         }
     }
-
-    public static class BinaryStructConverter
-    {
-        public static T FromByteArray<T>(byte[] bytes) where T : struct
-        {
-            IntPtr ptr = IntPtr.Zero;
-            try
-            {
-                int size = Marshal.SizeOf(typeof(T));
-                ptr = Marshal.AllocHGlobal(size);
-                Marshal.Copy(bytes, 0, ptr, size);
-                object obj = Marshal.PtrToStructure(ptr, typeof(T));
-                return (T)obj;
-            }
-            finally
-            {
-                if (ptr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(ptr);
-            }
-        }
-
-        public static byte[] ToByteArray<T>(T obj) where T : struct
-        {
-            IntPtr ptr = IntPtr.Zero;
-            try
-            {
-                int size = Marshal.SizeOf(typeof(T));
-                ptr = Marshal.AllocHGlobal(size);
-                Marshal.StructureToPtr(obj, ptr, true);
-                byte[] bytes = new byte[size];
-                Marshal.Copy(ptr, bytes, 0, size);
-                return bytes;
-            }
-            finally
-            {
-                if (ptr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(ptr);
-            }
-        }
-    }
-
+    
     // Данные для путей файлов, которые будут показываться у меню:
     class MenuItemData
     {
@@ -150,7 +81,20 @@ namespace Stroiproject
         // Добавление пользовательских меню выполнено на основе: https://msdn.microsoft.com/ru-ru/library/ms752070%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
 
         // Список пользовательских пунктов меню, в которые записываются пути изменяемых файлов:
-        static SortedDictionary<String, MenuItemData> stackPaths = new SortedDictionary<string, MenuItemData>();
+        static SortedDictionary<string, MenuItemData> stackPaths = new SortedDictionary<string, MenuItemData>();
+        public static String GetStackPathsAsString()
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var obj in stackPaths.OrderBy(d => d.Value.index).Reverse().ToArray())
+            {
+                if(sb.Length > 0)
+                {
+                    sb.Append("\n");
+                }
+                sb.Append(obj.Key);
+            }
+            return sb.ToString();
+        }
 
         // Пользовательская команда:
         public static RoutedCommand CustomRoutedCommand = new RoutedCommand();
@@ -158,6 +102,12 @@ namespace Stroiproject
         {
             //MessageBox.Show("Custom Command Executed: "+ e.Parameter);
             String str_path = e.Parameter.ToString();
+            gotoPathByWindowsExplorer(str_path);
+        }
+
+        private static void gotoPathByWindowsExplorer(string _path)
+        {
+            String str_path = _path;
             bool bool_path_is_file = true;
             try
             {
@@ -201,17 +151,27 @@ namespace Stroiproject
                 }
 
                 // Заполнить новые пункты:
+                //Grid mi = null;
+                MenuItem mi = null;
                 foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray())
                 {
                     if (File.Exists(obj.Key) == true || Directory.Exists(obj.Key) == true)
                     {
-                        MenuItem mi = obj.Value.mi;
+                        mi = obj.Value.mi;
+                        //mi.Children.Cast<MenuItem>().First(e=>Grid.GetRow(e)==0 && Grid.GetColumn(e)==0).FontWeight = FontWeights.Normal;
+                        mi.FontWeight = FontWeights.Normal;
                         _notifyIcon.ContextMenu.Items.Insert(0, mi);
                     }
                     else
                     {
                         stackPaths.Remove(obj.Key);
                     }
+                }
+                if (mi != null)
+                {
+                    //mi.FontWeight = FontWeights.Bold;
+                    //mi.Children.Cast<MenuItem>().First(e => Grid.GetRow(e) == 0 && Grid.GetColumn(e) == 0).FontWeight = FontWeights.Bold;
+                    mi.FontWeight = FontWeights.Bold;
                 }
 
                 // Максимальное количество файлов в списке должно быть не больше указанного максимального значения:
@@ -231,6 +191,8 @@ namespace Stroiproject
         }
 
         private static TaskbarIcon _notifyIcon=null;
+        private static bool bool_is_path_tooltip = false;
+        private static bool bool_is_ballow_was_shown = false;
         public static TaskbarIcon NotifyIcon
         {
             get
@@ -266,6 +228,45 @@ namespace Stroiproject
             //*/
 
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
+            _notifyIcon.TrayBalloonTipClicked += (sender, args) =>
+            {
+                if (stackPaths.Count > 0 && bool_is_path_tooltip==true)
+                {
+                    // http://stackoverflow.com/questions/11549580/find-key-with-max-value-from-sorteddictionary
+                    string path = stackPaths.OrderBy(d => d.Value.index).Last().Key;
+                    gotoPathByWindowsExplorer(path);
+                    bool_is_path_tooltip = false;
+                }
+            };
+
+            // Эти два обработчика ошибок появились вынужденно.
+            /*
+               Проблема в переходе на файл, когда путь к файлу выводится во всплывающем баллоне.
+               Проблема в том, как отличить простое сообщение от сообщения, в котором выводиться путь?
+               Перед выводом сообщения о пути я выставил флаг bool_is_path_tooltip, чтобы баллон TrayBalloonTipClicked знал,
+               что сейчас в нём путь от последнего файла. Потом я хотел сбросить этот флаг в TrayBalloonTipShown, но
+               оказалось, что перед отображением баллона всегда вызывается событие TrayBalloonTipClosed, поэтому в обработчике
+               TrayBalloonTipClicked переменная bool_is_path_tooltip всегда будет false. Нужно было защитить эту переменную.
+               Поэтому я поступил так. Перед выводом баллона выставил защищающую переменную bool_is_ballow_was_shown=true,
+               что говорит о том, что что бы не было перед отображением баллона с путём на экране - это не моё и переменная
+               bool_is_path_tooltip не сбрасывается. Потом открывается мой баллон и переменная bool_is_ballow_was_shown говорит
+               что наконец-то мой баллон был открыт и любое его закрытие (по любой причине - клик или угасание) будет сбрасывать
+               оба флага и следующий баллон не будет восприниматься как баллон с путём к файлу.
+               Долбанутый алгоритм. Короче просто триггер, чтобы пропустить один hide
+             */
+            _notifyIcon.TrayBalloonTipClosed += (sender, args) =>
+            {
+                if (bool_is_ballow_was_shown == true)
+                {
+                    bool_is_path_tooltip = false;
+                    bool_is_ballow_was_shown = false;
+                }
+            };
+
+            _notifyIcon.TrayBalloonTipShown += (sender, args) =>
+            {
+                bool_is_ballow_was_shown = true;
+            };
 
             //notifyIcon.ContextMenu.Items.Insert(0, new Separator() );  // http://stackoverflow.com/questions/4823760/how-to-add-horizontal-separator-in-a-dynamically-created-contextmenu
             CommandBinding customCommandBinding = new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand);
@@ -277,7 +278,7 @@ namespace Stroiproject
         public static String getIniFilePath()
         {
             String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
-            string exe_file = typeof(Stroiproject.App).Assembly.Location; // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
+            string exe_file = typeof(FileChangesWatcher.App).Assembly.Location; // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
             //iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
             iniFilePath = System.IO.Path.GetDirectoryName(exe_file) + "\\" + System.IO.Path.GetFileNameWithoutExtension(exe_file) + ".ini";
             return iniFilePath;
@@ -285,7 +286,7 @@ namespace Stroiproject
         public static String getExeFilePath()
         {
             // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
-            String exeFilePath = typeof(Stroiproject.App).Assembly.Location; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+            String exeFilePath = typeof(FileChangesWatcher.App).Assembly.Location; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
             //exeFilePath = Process.GetCurrentProcess().MainModule.FileName;
             return exeFilePath;
         }
@@ -400,10 +401,10 @@ namespace Stroiproject
                 data.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java");
                 //data.Sections["Extensions"].AddKey("", "");
                 // Список каталогов, за которыми надо следить:
-                data.Sections["FoldersForWatch"].AddKey("folder01", "D:\\");
-                data.Sections["FoldersForWatch"].AddKey("folder02", "E:\\Docs");
-                data.Sections["FoldersForWatch"].AddKey("folder03", "F:\\");
-                data.Sections["FoldersForWatch"].AddKey("folder03", "G:\\Example русские буквы");
+                data.Sections["FoldersForWatch"].AddKey("folder01", @"D:\");
+                data.Sections["FoldersForWatch"].AddKey("folder02", @"E:\Docs");
+                data.Sections["FoldersForWatch"].AddKey("folder03", @"F:\");
+                data.Sections["FoldersForWatch"].AddKey("folder04", @"\\test.server.network\path");
                 // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
                 data.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
                 data.Sections["FileNamesExceptions"].AddKey("file01", "~$");
@@ -574,8 +575,10 @@ namespace Stroiproject
             //notifyIcon.ContextMenu.Opacity = 0.5;
             _notifyIcon.ShowBalloonTip("Info", "Watching folders: \n" + String.Join("\n",  _paths.ToArray() ), BalloonIcon.Info);
         }
-        
+
         // Параметры для отлеживания изменений в файлах: ========================================
+
+        static Dictionary<String, BitmapImage> icons_map = new Dictionary<string, BitmapImage>();
 
         static Regex _re_extensions = null;
         public static Regex re_extensions
@@ -599,11 +602,21 @@ namespace Stroiproject
             String str = _path;
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
-                _notifyIcon.ShowBalloonTip("", _path, BalloonIcon.Info);
+                _notifyIcon.CloseBalloon();
+                _notifyIcon.ShowBalloonTip("go to path:",_path, BalloonIcon.Info);
+                bool_is_path_tooltip = true; // После клика или после исчезновения баллона этот флаг будет сброшен.
+                bool_is_ballow_was_shown = false;
+                //_notifyIcon.TrayBalloonTipClicked
                 // Если такой путь уже есть в логе, то нужно его удалить. Это позволит переместить элемент на верх списка.
                 if (stackPaths.ContainsKey(_path) == true)
                 {
-                    removePathFromDictionary(_path);
+                    //removePathFromDictionary(_path);
+                    MenuItemData _id = null;
+                    if (stackPaths.TryGetValue(_path, out _id))
+                    {
+                        _notifyIcon.ContextMenu.Items.Remove(_id.mi);
+                        stackPaths.Remove(_path);
+                    }
                 }
 
                 if (stackPaths.ContainsKey(_path) == false)
@@ -615,6 +628,41 @@ namespace Stroiproject
                         // http://stackoverflow.com/questions/11549580/find-key-with-max-value-from-sorteddictionary
                         max_value = stackPaths.OrderBy(d => d.Value.index).Last().Value.index;
                     }
+
+                    /*
+                     * // Игрался с Grid, чтобы рядом с именем файла сделать кнопку Clipboard. Что-то эта кнопка
+                     * прижималась к имени файла в конце, а никак не хотела выравниваться по правому краю контекстного меню.
+                     * Пока ничего хорошего. Сделал общее копирование всех текущих путей.
+                    // http://www.wpftutorial.net/gridlayout.html
+                    Grid mi_grid = new Grid();
+                    mi_grid.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    ColumnDefinition col0 = new ColumnDefinition();
+                    col0.Width = GridLength.Auto;
+                    ColumnDefinition col1 = new ColumnDefinition();
+                    col1.Width = new GridLength(18);
+                    RowDefinition row0 = new RowDefinition();
+                    mi_grid.ColumnDefinitions.Add(col0);
+                    mi_grid.ColumnDefinitions.Add(col1);
+                    mi_grid.RowDefinitions.Add(row0);
+
+                    MenuItem mi_clipboard = new MenuItem();
+                    mi_clipboard.Icon = new System.Windows.Controls.Image
+                    {
+                        Source = new BitmapImage(
+                        new Uri("pack://application:,,,/Icons/Clipboard_16x16.ico"))
+                    };
+                    //FileChangesWatcher.Resources.Clipboard_16x16;
+                    mi_clipboard.ToolTip = "Copy path to clipboard";
+                    MenuItem mi_file = new MenuItem();
+                    Grid.SetColumn(mi_file, 0);
+                    Grid.SetRow(mi_file, 0);
+                    Grid.SetColumn(mi_clipboard, 1);
+                    Grid.SetRow(mi_clipboard, 0);
+                    mi_file.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    mi_clipboard.HorizontalAlignment = HorizontalAlignment.Right;
+                    mi_grid.Children.Add(mi_file);
+                    mi_grid.Children.Add(mi_clipboard);
+                    */
 
                     // Создать пункт меню и наполнить его смыслом:
                     MenuItem mi = new MenuItem();
@@ -645,32 +693,58 @@ namespace Stroiproject
                     // Как-то зараза не грузится простым присваиванием.
                     String file_ext = Path.GetExtension(_path);
                     Icon mi_icon=null;
-                    try
-                    {
-                        mi_icon = Icon.ExtractAssociatedIcon(_path);// getIconByExt(file_ext);
-                    }
-                    catch (System.IO.FileNotFoundException ex)
-                    {
-                    }
+                    BitmapImage bitmapImage = null;
 
-                    if(mi_icon != null)
+                    // Кешировать иконки для файлов:
+                    if( icons_map.TryGetValue(file_ext, out bitmapImage)==true)
                     {
-                        BitmapImage bitmapImage = null;
-                        using (MemoryStream memory = new MemoryStream())
+                    }
+                    else
+                    {
+                        try
                         {
-                            mi_icon.ToBitmap().Save(memory, ImageFormat.Png);
-                            memory.Position = 0;
-                            bitmapImage = new BitmapImage();
-                            bitmapImage.BeginInit();
-                            bitmapImage.StreamSource = memory;
-                            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                            bitmapImage.EndInit();
+                            // На сетевых путях выдаёт Exception. Поэтому к сожалению не годиться.
+                            //mi_icon = Icon.ExtractAssociatedIcon(_path);// getIconByExt(file_ext);
+
+                            // Этот метод работает: http://stackoverflow.com/questions/1842226/how-to-get-the-associated-icon-from-a-network-share-file?answertab=votes#tab-top
+                            ushort uicon;
+                            StringBuilder strB = new StringBuilder(_path);
+                            IntPtr handle = ExtractAssociatedIcon(IntPtr.Zero, strB, out uicon);
+                            mi_icon = Icon.FromHandle(handle);
                         }
+                        catch (Exception ex)
+                        {
+                            mi_icon = null;
+                            icons_map.Add(file_ext, null);
+                        }
+
+                        if(mi_icon != null)
+                        {
+                            using (MemoryStream memory = new MemoryStream())
+                            {
+                                mi_icon.ToBitmap().Save(memory, ImageFormat.Png);
+                                memory.Position = 0;
+                                bitmapImage = new BitmapImage();
+                                bitmapImage.BeginInit();
+                                bitmapImage.StreamSource = memory;
+                                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                                bitmapImage.EndInit();
+                                icons_map.Add(file_ext, bitmapImage);
+                            }
+                        }
+                    }
+                    if (bitmapImage != null)
+                    {
                         mi.Icon = new System.Windows.Controls.Image
                         {
                             Source = bitmapImage
                         };
                     }
+                    else
+                    {
+                        mi.Icon = null;
+                    }
+
                     MenuItemData id = new MenuItemData(mi, max_value + 1);
                     stackPaths.Add(_path, id);
                     _notifyIcon.ContextMenu.Items.Insert(0, id.mi);
@@ -702,11 +776,15 @@ namespace Stroiproject
                     if(mid.Key.StartsWith(_old_path) == true)
                     {
                         string _Key = mid.Key.Replace(_old_path, _new_path);
+                        //Grid grid = mid.Value.mi;
                         MenuItem mi = mid.Value.mi;
-                        mi.Header = _Key.Length > (menuitem_header_length * 2 + 5) ? _Key.Substring(0, menuitem_header_length) + " ... " + _Key.Substring(_new_path.Length - menuitem_header_length) : _Key;
-                        mi.ToolTip = _Key;
-                        mi.CommandParameter = _Key;
+                        //MenuItem mi_command = grid.Children.Cast<MenuItem>().First(e => Grid.GetRow(e) == 0 && Grid.GetColumn(e) == 0);//mid.Value.mi;
+                        MenuItem mi_command = mid.Value.mi;
+                        mi_command.Header = _Key.Length > (menuitem_header_length * 2 + 5) ? _Key.Substring(0, menuitem_header_length) + " ... " + _Key.Substring(_new_path.Length - menuitem_header_length) : _Key;
+                        mi_command.ToolTip = _Key;
+                        mi_command.CommandParameter = _Key;
                         stackPaths.Remove(mid.Key);
+                        //MenuItemData id = new MenuItemData(grid, mid.Value.index);
                         MenuItemData id = new MenuItemData(mi, mid.Value.index);
                         stackPaths.Add(_Key, id);
                     }
@@ -726,13 +804,27 @@ namespace Stroiproject
                 return;
             }
 
+            // Проверить, а не начинается ли путь с исключения:
+            for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
+            {
+                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
+                        (
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "") == "" ||
+                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
+                        )
+                    )
+                {
+                    return;
+                }
+            }
+
             bool bool_path_is_file = true;
             try
             {
                 // Проверить о чём идёт речь - о каталоге или о файле:
                 bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
             }
-            catch(Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
+            catch(Exception ex) // when (ex is UnauthorizedAccessException || ex is FileNotFoundException) // Было ещё IOException
             {
                 // TODO: В дальнейшем надо подумать как на них реагировать.
                 reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
@@ -747,21 +839,6 @@ namespace Stroiproject
             {
                 return;
             }
-
-            // Проверить, а не начинается ли путь с исключения:
-            for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
-            {
-                if (e.FullPath.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
-                        (
-                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")=="" ||
-                            e.FullPath.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0]==Path.DirectorySeparatorChar
-                        )
-                    )
-                {
-                    return;
-                }
-            }
-
 
             if (bool_path_is_file == true)
             {
@@ -784,19 +861,6 @@ namespace Stroiproject
 
         private static void OnRenamed(object source, RenamedEventArgs e)
         {
-            bool bool_path_is_file = true;
-            try
-            {
-                // Проверить о чём идёт речь - о каталоге или о файле:
-                bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
-            }
-            catch (Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
-            {
-                // TODO: В дальнейшем надо подумать как на них реагировать.
-                reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
-                return;
-            }
-
             // Проверить, а не начинается ли путь с исключения:
             for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
             {
@@ -809,6 +873,19 @@ namespace Stroiproject
                 {
                     return;
                 }
+            }
+
+            bool bool_path_is_file = true;
+            try
+            {
+                // Проверить о чём идёт речь - о каталоге или о файле:
+                bool_path_is_file = !File.GetAttributes(e.FullPath).HasFlag(FileAttributes.Directory);
+            }
+            catch (Exception ex) //when (ex is UnauthorizedAccessException || ex is FileNotFoundException)  // Было ещё IOException
+            {
+                // TODO: В дальнейшем надо подумать как на них реагировать.
+                reloadCustomMenuItems(); // Может так? Иногда события не успевают обработаться и опаздывают. Например при удалении каталога можно ещё получить его изменения об удалении файлов. Но когда обработчик приступит к обработке изменений, то каталог может быть уже удалён.
+                return;
             }
 
             // Проверить, а не является ли расширение наблюдаемым?
@@ -882,7 +959,8 @@ namespace Stroiproject
             return Allow && !Deny;
         }
 
-        //*  Для тестов над регистрацией компонента для контекстного меню директория - чтобы добавить исключения каталогов через контекстно меню проводника windows. Пока эти функции регистрации не работают. Не понимаю в чём дело.
+        //  регистрацией компонента для контекстного меню
+        // https://artemgrygor.wordpress.com/2010/10/06/register-shell-extension-context-menu-also-on-windows-x64-part-2/
         public static void registerDLL(string dllPath)
         {
             try
@@ -892,7 +970,7 @@ namespace Stroiproject
                 Assembly asm = Assembly.LoadFile(dllPath);
                 var reg = new RegistrationServices();
 
-                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
+                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флаг Properties\Build\prefer x32-bit
                 // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
                 // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
 
@@ -914,6 +992,7 @@ namespace Stroiproject
             }
         }
 
+        // https://artemgrygor.wordpress.com/2010/10/06/register-shell-extension-context-menu-also-on-windows-x64-part-2/
         public static void unregisterDLL(string dllPath)
         {
             try
@@ -923,7 +1002,7 @@ namespace Stroiproject
                 Assembly asm = Assembly.LoadFile(dllPath);
                 var reg = new RegistrationServices();
 
-                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флан prefer x32
+                // Для нормальной работы регистрации/разрегистрации в x64 нужно предварительно в проекте снять флаг Properties\Build\prefer x32-bit
                 // http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=574b489886b57c9b6268635a
                 // Идею нашёл в http://www.advancedinstaller.com/forums/viewtopic.php?t=7837
 
@@ -1053,6 +1132,11 @@ namespace Stroiproject
             ToastNotificationManager.CreateToastNotifier(APP_ID).Show(toast);
         }
         //*/
+
+        // http://stackoverflow.com/questions/1842226/how-to-get-the-associated-icon-from-a-network-share-file?answertab=votes#tab-top
+        [DllImport("shell32.dll")]
+        static extern IntPtr ExtractAssociatedIcon(IntPtr hInst, StringBuilder lpIconPath, out ushort lpiIcon);
     }
+
 }
 

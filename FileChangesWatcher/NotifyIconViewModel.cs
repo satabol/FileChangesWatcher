@@ -16,14 +16,14 @@ using System.Net.Http;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using Stroiproject;
+using FileChangesWatcher;
 using Microsoft.Win32;
 using IniParser;
 
 //using Windows.UI.Notifications;
 //using NotificationsExtensions.Tiles; // NotificationsExtensions.Win10
 
-namespace Stroiproject
+namespace FileChangesWatcher
 {
     class NotifyIconViewModel : INotifyPropertyChanged
     {
@@ -203,7 +203,7 @@ namespace Stroiproject
                 {
                     CommandAction = () =>
                     {
-                        if(Stroiproject.App.IsUserAdministrator() == true)
+                        if(FileChangesWatcher.App.IsUserAdministrator() == true)
                         {
                             App.registerDLL(App.getExeFilePath());
                         }
@@ -226,7 +226,7 @@ namespace Stroiproject
                 {
                     CommandAction = () =>
                     {
-                        if (Stroiproject.App.IsUserAdministrator() == true)
+                        if (FileChangesWatcher.App.IsUserAdministrator() == true)
                         {
                             App.unregisterDLL(App.getExeFilePath());
                         }
@@ -235,6 +235,32 @@ namespace Stroiproject
                             //MessageBox.Show( this, "Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
                             //App.Sh
                             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Error on access to register FileChangesWatcher in Windows Context Menu. You have to be administrator", BalloonIcon.Error);
+                        }
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand CopyPathsToClipboard
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        String paths = App.GetStackPathsAsString();
+                        if (paths.Length>0)
+                        {
+                            System.Windows.Forms.Clipboard.SetText(paths);
+                            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Clipboard set with paths", BalloonIcon.Info);
+                        }
+                        else
+                        {
+                            //MessageBox.Show( this, "Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                            //App.Sh
+                            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "No paths to set", BalloonIcon.Error);
                         }
                     },
                     CanExecuteFunc = () => true

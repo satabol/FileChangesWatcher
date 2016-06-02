@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Globalization;
 using System.IO;
 
-namespace Stroiproject
+namespace FileChangesWatcher
 {
     class MainStandalone
     {
@@ -17,7 +17,7 @@ namespace Stroiproject
         public static void Main()
         {
             AppDomain.CurrentDomain.AssemblyResolve += OnResolveAssembly;
-            Stroiproject.App app = new Stroiproject.App();
+            FileChangesWatcher.App app = new FileChangesWatcher.App();
             app.InitializeComponent();
             app.Run();
             //App.Main();

@@ -105,7 +105,7 @@ namespace FileChangesWatcher
                     }
 
                     item = new ToolStripMenuItem();
-                    String iniFilePath = Stroiproject.App.getIniFilePath();
+                    String iniFilePath = FileChangesWatcher.App.getIniFilePath();
 
                     FileIniDataParser fileIniDataParser = new FileIniDataParser();
                     IniParser.Model.IniData data; // = new IniParser.Model.IniData();
@@ -157,7 +157,7 @@ namespace FileChangesWatcher
 
                         bool bool_folder_is_in_Section = false;
                         // Проверить, что расширение не наблюдается приложением:
-                        if (Stroiproject.App.getExtensionsRegEx(data).IsMatch(ext) == true)
+                        if (FileChangesWatcher.App.getExtensionsRegEx(data).IsMatch(ext) == true)
                         {
                             bool_folder_is_in_Section = true;
                         }
