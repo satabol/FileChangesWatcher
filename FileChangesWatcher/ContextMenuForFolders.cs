@@ -73,7 +73,6 @@ namespace FileChangesWatcher
                 break;
             }
 
-            ToolStripMenuItem item = null;
             try
             {
                 if (FolderPath == null)
@@ -104,56 +103,60 @@ namespace FileChangesWatcher
                         return;
                     }
 
-                    item = new ToolStripMenuItem();
                     String iniFilePath = FileChangesWatcher.App.getIniFilePath();
 
                     FileIniDataParser fileIniDataParser = new FileIniDataParser();
                     IniParser.Model.IniData data; // = new IniParser.Model.IniData();
-                    data = fileIniDataParser.ReadFile(iniFilePath);
+                    data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                     if (bool_path_is_file == false)
                     {
-
-                        bool bool_folder_is_in_Section = false;
-                        // Проверить, что каталога ещё нет в исключениях:
-                        for (int i = 0; i <= data.Sections["FoldersForExceptions"].Count - 1; i++)
+                        foreach (string section_name in new string[] {"FoldersForWatch", "FoldersForExceptions"})
                         {
-                            String folder = data.Sections["FoldersForExceptions"].ElementAt(i).Value;
-                            if (folder.Equals(path) == true)
+                            ToolStripMenuItem item = new ToolStripMenuItem();
+                            bool bool_folder_is_in_Section = false;
+                            // Проверить, что каталога ещё нет в исключениях:
+                            for (int i = 0; i <= data.Sections[section_name].Count - 1; i++)
                             {
-                                bool_folder_is_in_Section = true;
-                                break;
-                            }
-                        }
-
-                        if(bool_folder_is_in_Section==true)
-                        {
-                            item.Text = "path \"" + path + "\" is in FoldersForExceptions Section already";
-                            item.Enabled = false;
-                        }
-                        else
-                        {
-                            item.Text = "Add path \"" + path + "\" to FoldersForExceptions Section";
-                            item.Click += (sender, args) =>
-                            {
-                                // Добавить этот каталог в исключения:
-                                data = fileIniDataParser.ReadFile(iniFilePath);
-                                for (int i = 0; i <= 100000; i++)
+                                String folder = data.Sections[section_name].ElementAt(i).Value;
+                                if (folder.Equals(path) == true)
                                 {
-                                    string new_key = "folder" + i;
-                                    if (data.Sections["FoldersForExceptions"].ContainsKey(new_key) == false)
-                                    {
-                                        data.Sections["FoldersForExceptions"].AddKey(new_key, path);
-                                        fileIniDataParser.WriteFile(iniFilePath, data);
-                                        MessageBox.Show("Folder\n \"" + path + "\"\n is append to FoldersForExceptions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                        break;
-                                    }
+                                    bool_folder_is_in_Section = true;
+                                    break;
                                 }
-                            };
+                            }
+
+                            if (bool_folder_is_in_Section == true)
+                            {
+                                item.Text = "path \"" + path + "\" is in "+ section_name + " Section already";
+                                item.Enabled = false;
+                            }
+                            else
+                            {
+                                item.Text = "Add path \"" + path + "\" to "+ section_name + " Section";
+                                item.Click += (sender, args) =>
+                                {
+                                // Добавить этот каталог в исключения:
+                                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                                    for (int i = 0; i <= 100000; i++)
+                                    {
+                                        string new_key = "folder" + i;
+                                        if (data.Sections[section_name].ContainsKey(new_key) == false)
+                                        {
+                                            data.Sections[section_name].AddKey(new_key, path);
+                                            fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
+                                            MessageBox.Show("Folder\n \"" + path + "\"\n is append to "+ section_name+" Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                            break;
+                                        }
+                                    }
+                                };
+                            }
+                            menu.DropDownItems.Add(item);
                         }
                     }
                     else
                     {
                         string ext = Path.GetExtension(path).ToLower();
+                        ToolStripMenuItem item = new ToolStripMenuItem();
 
                         bool bool_folder_is_in_Section = false;
                         // Проверить, что расширение не наблюдается приложением:
@@ -173,22 +176,22 @@ namespace FileChangesWatcher
                             item.Click += (sender, args) =>
                             {
                                 // Добавить расширение в исключения:
-                                data = fileIniDataParser.ReadFile(iniFilePath);
+                                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                                 for (int i = 0; i <= 100000; i++)
                                 {
                                     string new_key = "extension" + i;
                                     if (data.Sections["Extensions"].ContainsKey(new_key) == false)
                                     {
                                         data.Sections["Extensions"].AddKey(new_key, ext);
-                                        fileIniDataParser.WriteFile(iniFilePath, data);
+                                        fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
                                         MessageBox.Show("Extension \n \"" + ext + "\"\n is append to Extensions Section FileChangesWatcher. Do not forget RELOAD settings!!!", "FileChangesWatcher", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                         break;
                                     }
                                 }
                             };
                         }
+                        menu.DropDownItems.Add(item);
                     }
-                    menu.DropDownItems.Add(item);
                 }
             }
             catch (Exception e)

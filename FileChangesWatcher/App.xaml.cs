@@ -22,6 +22,12 @@ using Microsoft.Win32;
 using IniParser;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Diagnostics.Eventing.Reader;
+using System.Xml;
+using System.Threading;
+using System.Collections.Concurrent;
+using System.ComponentModel;
+
 //using NotificationsExtensions.Tiles;
 
 namespace FileChangesWatcher
@@ -64,11 +70,13 @@ namespace FileChangesWatcher
     {
         public Int32 index;
         public MenuItem mi;
+        public string user_owner;
 
-        public MenuItemData(MenuItem menuItem, int index)
+        public MenuItemData(MenuItem menuItem, int index, string _user_owner)
         {
             this.mi = menuItem;
             this.index = index;
+            this.user_owner = _user_owner;
         }
     }
 
@@ -317,11 +325,11 @@ namespace FileChangesWatcher
                 FileIniDataParser fileIniDataParser = new FileIniDataParser();
                 IniParser.Model.IniData data = new IniParser.Model.IniData();
                 String iniFilePath = App.getIniFilePath();
-                data = fileIniDataParser.ReadFile(iniFilePath);
+                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                 data.Sections["General"].RemoveKey("autostart_on_windows");
                 data.Sections["General"].AddKey("autostart_on_windows", "true");
                 UTF8Encoding a = new UTF8Encoding();
-                fileIniDataParser.WriteFile(iniFilePath, data);
+                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
             }
             catch (Exception e)
             {
@@ -341,10 +349,10 @@ namespace FileChangesWatcher
                 FileIniDataParser fileIniDataParser = new FileIniDataParser();
                 IniParser.Model.IniData data = new IniParser.Model.IniData();
                 String iniFilePath = App.getIniFilePath();
-                data = fileIniDataParser.ReadFile(iniFilePath);
+                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                 data.Sections["General"].RemoveKey("autostart_on_windows");
                 data.Sections["General"].AddKey("autostart_on_windows", "false");
-                fileIniDataParser.WriteFile(iniFilePath, data);
+                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
             }
             catch (Exception e)
             {
@@ -355,8 +363,65 @@ namespace FileChangesWatcher
 
         public static void initApplication(StartupEventArgs e)
         {
+            /*
+            EventLog event_log_security = new EventLog("Security");
+            int j = 0;
+            foreach(EventLogEntry entry in event_log_security.Entries)
+            {
+                Console.WriteLine("Data:"+entry.Data + " Index:" + entry.Index + " InstanceId:" + entry.InstanceId + " Message:" + entry.Message);
+                if( j++>10)
+                {
+                    break;
+                }
+
+            }
+            //*/
+
+            /*
+            string query = string.Format("*[System/EventID=4656 and System[TimeCreated[@SystemTime >= '{0}']]] and *[System[TimeCreated[@SystemTime <= '{1}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+                DateTime.Now.AddMinutes(-10).ToUniversalTime().ToString("o"),
+                DateTime.Now.AddMinutes(  0).ToUniversalTime().ToString("o")
+                );
+            EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, query);
+
+            try
+            {
+                EventLogReader logReader = new EventLogReader(eventsQuery);
+                int j = 0;
+                for (EventRecord eventdetail = logReader.ReadEvent(); eventdetail != null; eventdetail = logReader.ReadEvent())
+                {
+                    XmlDocument doc = new XmlDocument();
+                    doc.LoadXml( eventdetail.ToXml() );
+                    XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                    nsmgr.AddNamespace("def", "http://schemas.microsoft.com/win/2004/08/events/event");
+                    XmlNode root = doc.DocumentElement;
+                    XmlNode node_ObjectType = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectType']", nsmgr);
+                    string str_ObjectType = node_ObjectType.InnerText;
+                    XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
+                    string str_ObjectName = node_ObjectName.InnerText;
+                    XmlNode node_SubjectUserName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectUserName']", nsmgr);
+                    string str_SubjectUserName = node_SubjectUserName.InnerText;
+                    XmlNode node_SubjectDomainName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectDomainName']", nsmgr);
+                    string str_SubjectDomainName = node_SubjectDomainName.InnerText;
+                    XmlNode node_ProcessName = root["EventData"].SelectSingleNode("def:Data[@Name='ProcessName']", nsmgr);
+                    string str_ProcessName  = node_ProcessName.InnerText;
+
+                    if ( j++>10)
+                    {
+                        break;
+                    }
+                    // Read Event details
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while reading the event logs");
+                return;
+            }
+            //*/
+
             // Сбросить всех наблюдателей, установленных ранее:
-            foreach(FileSystemWatcher watcher in watchers.ToArray() )
+            foreach (FileSystemWatcher watcher in watchers.ToArray() )
             {
                 watcher.EnableRaisingEvents = false;
                 watcher.Changed -= new FileSystemEventHandler(OnChanged);
@@ -398,37 +463,29 @@ namespace FileChangesWatcher
                 data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
                 data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
                 data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
-                data.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java");
+                data.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
                 //data.Sections["Extensions"].AddKey("", "");
                 // Список каталогов, за которыми надо следить:
                 data.Sections["FoldersForWatch"].AddKey("folder01", @"D:\");
                 data.Sections["FoldersForWatch"].AddKey("folder02", @"E:\Docs");
                 data.Sections["FoldersForWatch"].AddKey("folder03", @"F:\");
-                data.Sections["FoldersForWatch"].AddKey("folder04", @"\\test.server.network\path");
                 // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
                 data.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
                 data.Sections["FileNamesExceptions"].AddKey("file01", "~$");
 
-                fileIniDataParser.WriteFile(iniFilePath, data);
+                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
             }
             else
             {
                 try
                 {
-                    data = fileIniDataParser.ReadFile(iniFilePath);
+                    data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                     _notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
                 }
                 catch (IniParser.Exceptions.ParsingException ex)
                 {
                     _notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu, please.";
                     _notifyIcon.ShowBalloonTip("Error in ini-file. Open settings in menu, please", ""+ex.Message + "", BalloonIcon.Error);
-                    /*
-                    if(System.Windows.MessageBox.Show("Error in ini-file:\n" + ex.Message+"\n\n Please - correct file or delete it for recreation.\n Application exit!\n\nOpen ini file before exit?", "Alert!", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                    {
-                        System.Diagnostics.Process.Start(iniFilePath);
-                    }
-                    //*/
-                    //App.Current.Shutdown();
                     return;
                 }
             }
@@ -437,9 +494,15 @@ namespace FileChangesWatcher
             // При первом запуске проверить, если в настройках нет флага, отменяющего автозагрузку,
             // то прописать автозапуск приложения в реестр:
             if (data.Sections["General"].GetKeyData("autostart_on_windows") == null) {
-                setAutostart();
-            }else 
-            if("true".Equals(data.Sections["General"].GetKeyData("autostart_on_windows").Value))
+                if( MessageBox.Show("Set autostart with windows?\n\n(if you say no then you can do this in context menu later)", "FileChangesWatcher", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    setAutostart();
+                }
+                else
+                {
+                    resetAutostart();
+                }
+            }else if("true".Equals(data.Sections["General"].GetKeyData("autostart_on_windows").Value))
             {
                 setAutostart();
             }else
@@ -468,6 +531,21 @@ namespace FileChangesWatcher
                 if (folder.Length > 0 && arr_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
                 {
                     arr_folders_for_watch.Add(folder);
+                    // Определить имя диска и его физическое имя:
+                    string drive_name = Path.GetPathRoot(folder);
+                    if( !(drive_name==null || drive_name.Length == 0) )
+                    {
+                        drive_name = drive_name.Split('\\')[0];
+                        if(dict_drive_phisical.ContainsKey(drive_name) == false)
+                        {
+                            List<string> list_phisical_drive_name = GetPhysicalDriveList(drive_name, @"\Device\HarddiskVolume");
+                            if(list_phisical_drive_name != null)
+                            {
+                                string phisical_drive_name = list_phisical_drive_name.First();
+                                dict_drive_phisical.Add(drive_name, phisical_drive_name);
+                            }
+                        }
+                    }
                 }
             }
             if (e != null)
@@ -578,6 +656,9 @@ namespace FileChangesWatcher
 
         // Параметры для отлеживания изменений в файлах: ========================================
 
+        // Соответствие между именем диска и его физическим именем:
+        static Dictionary<string, string> dict_drive_phisical = new Dictionary<string, string>();
+
         static Dictionary<String, BitmapImage> icons_map = new Dictionary<string, BitmapImage>();
 
         static Regex _re_extensions = null;
@@ -603,7 +684,23 @@ namespace FileChangesWatcher
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
                 _notifyIcon.CloseBalloon();
-                _notifyIcon.ShowBalloonTip("go to path:",_path, BalloonIcon.Info);
+                // Получить владельца файла:
+                string user_owner = null;
+                try
+                {
+                    // http://stackoverflow.com/questions/7445182/find-out-file-owner-creator-in-c-sharp
+                    user_owner = System.IO.File.GetAccessControl(_path).GetOwner(typeof(System.Security.Principal.NTAccount)).ToString();
+                }
+                catch(Exception ex)
+                {
+                    user_owner = "<unknown>";
+                }
+
+                //DriveInfo di = new DriveInfo(Path.GetPathRoot(_path));
+                string s = Path.GetPathRoot(_path);
+
+                _notifyIcon.HideBalloonTip();
+                _notifyIcon.ShowBalloonTip("go to path:", "file owner: "+user_owner+"\n"+_path, BalloonIcon.Info);
                 bool_is_path_tooltip = true; // После клика или после исчезновения баллона этот флаг будет сброшен.
                 bool_is_ballow_was_shown = false;
                 //_notifyIcon.TrayBalloonTipClicked
@@ -745,7 +842,7 @@ namespace FileChangesWatcher
                         mi.Icon = null;
                     }
 
-                    MenuItemData id = new MenuItemData(mi, max_value + 1);
+                    MenuItemData id = new MenuItemData(mi, max_value + 1, user_owner);
                     stackPaths.Add(_path, id);
                     _notifyIcon.ContextMenu.Items.Insert(0, id.mi);
 
@@ -767,6 +864,183 @@ namespace FileChangesWatcher
                 }
             });
         }
+
+        // Определить все события, которые в данный момент находятся в dict_path_time.
+        // После определения необходимо стереть все элементы, которые были на момент входа в функцию.
+        // Вернуть список событий, которые были получены в результате обработки очереди.
+        static List<Dictionary<string, string>> getDeleteInfo(/*string _path*/)
+        {
+            //string result = "неизвестный удалил "+_path;
+            // Тут будут события, которые взяты из журнала событий (как только они там наступят)
+            List<Dictionary<string, string>> dict_event_path_object = new List<Dictionary<string, string>>();
+            try
+            {
+                int j = 0;
+                //string disk_name = Path.GetPathRoot(_path);
+                //if (!(disk_name == null || disk_name.Length == 0))
+                {
+                    //disk_name = disk_name.Split('\\')[0];
+                    int i = 0;
+                    EventRecord eventdetail = null;
+                    EventLogReader logReader = null; // new EventLogReader(eventsQuery);
+                    List<KeyValuePair<string, DateTime>> arr_partial_events = new List<KeyValuePair<string, DateTime>>();
+                    do
+                    {
+                        arr_partial_events = dict_path_time.ToList();
+                        //arr_partial_events.AddRange( dict_path_time.ToList() );
+                        DateTime curr_time = DateTime.Now;
+                        int delta_seconds = 60;
+                        DateTime min_time = DateTime.Now;
+                        foreach (KeyValuePair<string, DateTime> path_time in dict_path_time)
+                        {
+                            // Если событие зарегистрировано в указанный интервал времени (delta_seconds) от момента входа в функцию,
+                            // то использовать эту запись в дальнейшем. Если не попадает, то удалить:
+                            if ((curr_time - path_time.Value).TotalSeconds <= delta_seconds)
+                            {
+                                if (min_time > path_time.Value)
+                                {
+                                    min_time = path_time.Value;
+                                }
+                            }
+                            else
+                            {
+                                arr_partial_events.Remove(path_time);
+                                if (arr_partial_events.Count == 0)
+                                {
+                                    return dict_event_path_object;
+                                }
+                                DateTime temp = new DateTime();
+                                if (dict_path_time.TryRemove(path_time.Key, out temp) == false)
+                                {
+                                    Console.Write("Удаление ключа " + path_time.Key + " не удалось");
+                                }
+                            }
+                        }
+                        // Пройтись по всем и выкинуть те, у кого время старше 10 сек от текущего момента:
+                        /*
+                        string query = string.Format("*[System/EventID=4656 and System[TimeCreated[@SystemTime >= '{0}']]] and *[System[TimeCreated[@SystemTime <= '{1}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+                            DateTime.Now.AddSeconds(-1).ToUniversalTime().ToString("o"),
+                            DateTime.Now.AddSeconds( 1).ToUniversalTime().ToString("o")
+                            );
+                            */
+                        // Запросить все события удаления файлов, которыек входят в интервал min_time
+                        string query = string.Format("*[ System[EventID=4656 or EventID=4663] and System[TimeCreated[@SystemTime >= '{0}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+                            min_time.AddSeconds(-1).ToUniversalTime().ToString("o")
+                            );
+                        EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, query);
+                        logReader = new EventLogReader(eventsQuery);
+                        eventdetail = logReader.ReadEvent();
+                        // Если записи из журнала прочитать не удалось, то читать их повторно
+                        if (i++ > 10 || eventdetail != null)
+                        {
+                            break;
+                        }
+                        Thread.Sleep(100);
+                    } while (eventdetail == null);
+
+                    for (; eventdetail != null; eventdetail = logReader.ReadEvent())
+                    {
+                        // https://techoctave.com/c7/posts/113-c-reading-xml-with-namespace
+                        XmlDocument doc = new XmlDocument();
+                        doc.LoadXml(eventdetail.ToXml());
+                        XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+                        nsmgr.AddNamespace("def", "http://schemas.microsoft.com/win/2004/08/events/event");
+                        XmlNode root = doc.DocumentElement;
+
+                        Dictionary<string, string> dict_event_object = new Dictionary<string, string>();
+
+                        XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
+                        string str_ObjectName = node_ObjectName.InnerText;
+                        dict_event_object.Add("ObjectName", str_ObjectName);
+
+                        XmlNode node_ObjectType = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectType']", nsmgr);
+                        string str_ObjectType = node_ObjectType.InnerText;
+                        dict_event_object.Add("ObjectType", str_ObjectType);
+
+                        XmlNode node_SubjectUserName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectUserName']", nsmgr);
+                        string str_SubjectUserName = node_SubjectUserName.InnerText;
+                        dict_event_object.Add("SubjectUserName", str_SubjectUserName);
+
+                        XmlNode node_SubjectDomainName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectDomainName']", nsmgr);
+                        string str_SubjectDomainName = node_SubjectDomainName.InnerText;
+                        dict_event_object.Add("SubjectDomainName", str_SubjectDomainName);
+
+                        XmlNode node_ProcessName = root["EventData"].SelectSingleNode("def:Data[@Name='ProcessName']", nsmgr);
+                        string str_ProcessName = node_ProcessName.InnerText;
+                        dict_event_object.Add("ProcessName", str_ProcessName);
+
+                        // Дружественное название имени объекта в списке зарегистрированных событий:
+                        string user_friendly_path = str_ObjectName;
+                        foreach (KeyValuePair<string, string> drive_phisical in dict_drive_phisical)
+                        {
+                            string drive = drive_phisical.Key;
+                            string phisical = drive_phisical.Value;
+                            if (str_ObjectName.StartsWith(phisical) == true || str_ObjectName.StartsWith(drive) == true)
+                            {
+                                user_friendly_path = str_ObjectName.Replace(phisical, drive + "\\");
+                                // TODO: проверить, что путь находится среди watchers!!!
+                                dict_event_object.Add("_user_friendly_path", user_friendly_path);
+                                dict_event_path_object.Add(dict_event_object);
+                                break;
+                            }
+                        }
+                        //*
+                        // Больше эта запись из журнала логов не понадобиться. Удалить её совсем:
+                        DateTime temp = new DateTime();
+                        if (dict_path_time.TryRemove(user_friendly_path, out temp) == false)
+                        {
+                            Console.Write("Удаление ключа " + user_friendly_path + " не удалось");
+                        }
+                        //*/
+
+                        //result = "" + str_SubjectDomainName + "\\" + str_SubjectUserName + " remove\n" + _path;
+
+                        /*
+                        string phisical_drive_name = null;
+                        if (dict_drive_phisical.TryGetValue(disk_name, out phisical_drive_name) == true)
+                        {
+                            string path = _path.Replace(disk_name, phisical_drive_name);
+                            XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
+                            string str_ObjectName = node_ObjectName.InnerText;
+                            if(path == str_ObjectName)
+                            {
+                                XmlNode node_ObjectType = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectType']", nsmgr);
+                                string str_ObjectType = node_ObjectType.InnerText;
+                                XmlNode node_SubjectUserName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectUserName']", nsmgr);
+                                string str_SubjectUserName = node_SubjectUserName.InnerText;
+                                XmlNode node_SubjectDomainName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectDomainName']", nsmgr);
+                                string str_SubjectDomainName = node_SubjectDomainName.InnerText;
+                                XmlNode node_ProcessName = root["EventData"].SelectSingleNode("def:Data[@Name='ProcessName']", nsmgr);
+                                string str_ProcessName = node_ProcessName.InnerText;
+                                result = ""+str_SubjectDomainName+"\\"+str_SubjectUserName+" remove\n"+_path;
+                                break;
+                            }
+                        }
+                        */
+                    }
+                    // Очистить гласный стек событий стёртых файлов от обработанных событий:
+                    foreach (KeyValuePair<string, DateTime> o in arr_partial_events)
+                    {
+                        DateTime temp = new DateTime();
+                        if (dict_path_time.TryRemove(o.Key, out temp) == false)
+                        {
+                            Console.Write("Удаление ключа " + o.Key + " не удалось");
+                        }
+                    }
+                    // Read Event details
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while reading the event logs");
+                StackTrace st = new StackTrace(ex, true);
+                int line_number_exeption = st.GetFrame(st.FrameCount - 1).GetFileLineNumber();
+                _notifyIcon.ShowBalloonTip("FileChangesWatcher", "in line: "+ line_number_exeption+"\n"+ex.Message, BalloonIcon.Error);
+            }
+            return dict_event_path_object;
+        }
+
+        /*
         private static void renamePathFromDictionary(String _old_path, string _new_path, WatcherChangeTypes cType)
         {
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
@@ -792,6 +1066,34 @@ namespace FileChangesWatcher
                 reloadCustomMenuItems();
             });
         }
+        //*/
+
+        private static void ShowPopupDeletePath(object sender, DoWorkEventArgs e)
+        {
+            while (dict_path_time.Count > 0)
+            {
+                List<Dictionary<string, string>> events = getDeleteInfo();
+                if(events.Count > 0)
+                {
+                    string str_path = null;
+                    events.First().TryGetValue("_user_friendly_path", out str_path);
+                    string SubjectUserName = null;
+                    events.First().TryGetValue("SubjectUserName", out SubjectUserName);
+                    string SubjectDomainName = null;
+                    events.First().TryGetValue("SubjectDomainName", out SubjectDomainName);
+                    _notifyIcon.ShowBalloonTip("FileChangesWatcher", "removed " + events.Count + " "+DateTime.Now+"\nlast: " + SubjectDomainName + "\\\\" + SubjectUserName + "\n" + str_path, BalloonIcon.Warning);
+                }
+            }
+        }
+
+        private static BackgroundWorker worker = new BackgroundWorker(); // Класс BackgroundWorker позволяет выполнить операцию в отдельном, выделенном потоке. https://msdn.microsoft.com/ru-ru/library/system.componentmodel.backgroundworker%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
+
+        private static int _lockFlag = 0; // 0 - free
+        private static Object thisLock = new Object();
+        // Путь к файлу и время, когда вызвано событие (Искать в журнале будем с учётом этого времени -1с)
+        // Валидны только те записи, которые не старше 10 сек от момента проверки и только те пути,
+        // которые есть у наблюдателя (в логах пишутся много событий удаления)
+        static ConcurrentDictionary<string, DateTime> dict_path_time = new ConcurrentDictionary<string, DateTime>();
 
         private static void OnChanged(object source, FileSystemEventArgs e)
         {
@@ -799,8 +1101,66 @@ namespace FileChangesWatcher
             {
                 if (stackPaths.ContainsKey(e.FullPath) == true)
                 {
+                    /* Эксперименты с чтение журнала на предмет событий удаления файла. Пока неудачно. Аудит настроил, но определить имя файла и 
+                     * поймать сами событие не могу, хотя они в журнале есть.
+                    EventUnit eu =  DisplayEventAndLogInformation(e.FullPath, DateTime.Now);
+                    if(eu != null)
+                    {
+                        NotifyIcon.ShowBalloonTip("delete file:", eu.User+": "+e.FullPath, BalloonIcon.Info);
+                    }
+                    else
+                    {
+                        NotifyIcon.ShowBalloonTip("delete file:", "<unknown>"+e.FullPath, BalloonIcon.Info);
+                    }
+                    //*/
                     reloadCustomMenuItems();
+
                 }
+
+                DateTime oldDateTime = DateTime.Now;
+                dict_path_time.AddOrUpdate(e.FullPath, DateTime.Now, (key, oldValue) => oldDateTime);
+
+                /*
+                if (Interlocked.CompareExchange(ref _lockFlag, 1, 0) == 0)
+                {
+                    // only 1 thread will enter here without locking the object/put the other threads to sleep.
+                    Monitor.Enter(thisLock);
+
+                    new Thread(delegate () 
+                    {
+                        try
+                        {
+                            while(dict_path_time.Count > 0)
+                            {
+                                ShowPopupDeletePath();
+                            }
+                            Interlocked.Decrement(ref _lockFlag);
+                        }
+                        finally
+                        {
+                            Monitor.Exit(thisLock);
+                        }
+                    }
+                    ).Start();
+                   // free the lock.
+                }
+                */
+                if( !worker.IsBusy)
+                {
+                    worker = new BackgroundWorker();
+                    worker.DoWork += new DoWorkEventHandler(ShowPopupDeletePath);
+                    worker.RunWorkerAsync();
+                }else
+                {
+                    Console.Write("skip");
+                }
+                /*
+                new Thread(delegate () {
+                    ShowPopupDeletePath(e.FullPath);
+                }).Start();
+                //*/
+                // Прочитать event log на предмет поиска только что удалённого файла:
+
                 return;
             }
 
@@ -918,7 +1278,53 @@ namespace FileChangesWatcher
             _notifyIcon.Dispose();
             base.OnExit(e);
         }
-        
+
+        public class EventUnit
+        {
+            public string Message;
+            public string User;
+            public string File;
+        }
+
+        public static EventUnit DisplayEventAndLogInformation(string fileToSearch, DateTime actionTime)
+        {
+            StringBuilder sb = new StringBuilder();
+            const string queryString = @"<QueryList>
+              <Query Id=""0"" Path=""Security"">
+                <Select Path=""Security"">*</Select>
+              </Query>
+            </QueryList>";
+            EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, queryString);
+            eventsQuery.ReverseDirection = true;
+            EventLogReader logReader = new EventLogReader(eventsQuery);
+            EventUnit e=null;
+            bool isStop = false;
+            for (EventRecord eventInstance = logReader.ReadEvent(); null != eventInstance; eventInstance = logReader.ReadEvent())
+            {
+                foreach (var VARIABLE in eventInstance.Properties)
+                    if (VARIABLE.Value.ToString().ToLower().Contains(fileToSearch.ToLower()) && actionTime.ToString("dd/MM/yyyy HH:mm:ss") == eventInstance.TimeCreated.Value.ToString("dd/MM/yyyy HH:mm:ss"))
+                    {
+                        foreach (var VARIABLE2 in eventInstance.Properties)
+                            sb.AppendLine(VARIABLE2.Value.ToString());
+                        e = new EventUnit();
+                        e.Message = sb.ToString();
+                        e.User = (eventInstance.Properties.Count > 1) ? eventInstance.Properties[1].Value.ToString() : "n/a";
+                        e.File = fileToSearch;
+                        isStop = true;
+                        break;
+                    }
+                if (isStop) break;
+                try
+                {
+                    //    Console.WriteLine("Description: {0}", eventInstance.FormatDescription());
+                }
+                catch (Exception e2)
+                {
+                }
+            }
+            return e;
+        }
+
         public static bool HasWritePermission(string dir)
         {
             bool Allow = false;
@@ -1136,6 +1542,77 @@ namespace FileChangesWatcher
         // http://stackoverflow.com/questions/1842226/how-to-get-the-associated-icon-from-a-network-share-file?answertab=votes#tab-top
         [DllImport("shell32.dll")]
         static extern IntPtr ExtractAssociatedIcon(IntPtr hInst, StringBuilder lpIconPath, out ushort lpiIcon);
+
+        // Native WINAPI functions to retrieve list of devices
+        private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern uint QueryDosDevice(string lpDeviceName, IntPtr lpTargetPath, int ucchMax);
+
+        /// <summary>
+        /// Retrieves list of all "PhysicalDrive" identifiers on the system, depicting plugged in PhysicalDrives
+        /// https://www.virag.si/2010/02/enumerate-physical-drives-in-windows/
+        /// </summary>
+        /// List of "PhysicalDriveX" strings of plugged in drives
+        private static List<string> GetPhysicalDriveList(string drive_letter_without_slash, string start_with)
+        {
+            uint returnSize = 0;
+            // Arbitrary initial buffer size
+            int maxResponseSize = 100;
+
+            IntPtr response = IntPtr.Zero;
+
+            string allDevices = null;
+            string[] devices = null;
+
+            while (returnSize == 0)
+            {
+                // Allocate response buffer for native call
+                response = Marshal.AllocHGlobal(maxResponseSize);
+
+                // Check out of memory condition
+                if (response != IntPtr.Zero)
+                {
+                    try
+                    {
+                        // List DOS devices
+                        returnSize = QueryDosDevice( drive_letter_without_slash/*null*/, response, maxResponseSize);
+
+                        // List success
+                        if (returnSize != 0)
+                        {
+                            // Result is returned as null-char delimited multistring
+                            // Dereference it from ANSI charset
+                            allDevices = Marshal.PtrToStringAnsi(response, maxResponseSize);
+                        }
+                        // The response buffer is too small, reallocate it exponentially and retry
+                        else if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
+                        {
+                            maxResponseSize = (int)(maxResponseSize * 5);
+                        }
+                        // Fatal error has occured, throw exception
+                        else
+                        {
+                            Marshal.ThrowExceptionForHR(Marshal.GetLastWin32Error());
+                        }
+                    }
+                    finally
+                    {
+                        // Always free the allocated response buffer
+                        Marshal.FreeHGlobal(response);
+                    }
+                }
+                else
+                {
+                    throw new OutOfMemoryException("Out of memory when allocating space for QueryDosDevice command!");
+                }
+            }
+
+            // Split zero-character delimited multi-string
+            devices = allDevices.Split('\0');
+            // QueryDosDevices lists alot of devices, return only PhysicalDrives
+            return devices.Where(device => device.StartsWith(start_with /*"PhysicalDrive"*/)).ToList <string> ();
+        }
     }
 
 }
