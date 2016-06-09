@@ -251,6 +251,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.XML" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore">
@@ -270,12 +271,19 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ContextMenuForFolders.cs" />
+    <Compile Include="DialogListingDeletedFiles.xaml.cs">
+      <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainStandalone.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Page Include="DialogListingDeletedFiles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="NotifyIconResources.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

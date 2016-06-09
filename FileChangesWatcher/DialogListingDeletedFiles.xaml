@@ -1,0 +1,31 @@
+﻿<Window x:Class="FileChangesWatcher.DialogListingDeletedFiles"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FileChangesWatcher"
+        Name="dialogListingDeletedFiles"
+        Title="Список удалённых файлов" Height="300" Width="800">
+    <Window.Icon>
+        <BitmapImage UriSource="Icons/apply.ico"></BitmapImage>
+    </Window.Icon>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <TextBox Grid.Row="0" BorderThickness="0" FontSize="18">List of deleted files:</TextBox>
+        <TextBox Grid.Row="1"
+                     x:Name="txtListFiles"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     AcceptsReturn="True"
+                     FontSize="12"
+                     Width="Auto"
+                     VerticalAlignment="Stretch"
+                     HorizontalAlignment="Stretch"
+                     VerticalContentAlignment="Top"
+                     Background="#FFFFFDEA"
+                     />
+    </Grid>
+</Window>

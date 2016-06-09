@@ -27,6 +27,8 @@ using System.Xml;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Windows.Media;
+using System.Globalization;
 
 //using NotificationsExtensions.Tiles;
 
@@ -65,18 +67,30 @@ namespace FileChangesWatcher
         }
     }
     
-    // Данные для путей файлов, которые будут показываться у меню:
+    // Данные для путей файлов, которые будут показываться в меню:
     class MenuItemData
     {
+        private static int _i=0;
+        public static int i
+        {
+            get
+            {
+                _i++;
+                return _i;
+            }
+        }
+
         public Int32 index;
         public MenuItem mi;
-        public string user_owner;
+        public string type;  // Тип записи.
+                             // file_folder - пункт меню содержит ссылку на файл/каталог
+                             // removed_items - для отображения диалога со списком удалённых объектов
 
         public MenuItemData(MenuItem menuItem, int index, string _user_owner)
         {
             this.mi = menuItem;
             this.index = index;
-            this.user_owner = _user_owner;
+            this.type = _user_owner;
         }
     }
 
@@ -92,6 +106,8 @@ namespace FileChangesWatcher
         static SortedDictionary<string, MenuItemData> stackPaths = new SortedDictionary<string, MenuItemData>();
         public static String GetStackPathsAsString()
         {
+            //List<MenuItemData> sss = new List<MenuItemData>();
+            //sss.Exists(x => x.index == 1);
             StringBuilder sb = new StringBuilder();
             foreach (var obj in stackPaths.OrderBy(d => d.Value.index).Reverse().ToArray())
             {
@@ -103,6 +119,43 @@ namespace FileChangesWatcher
             }
             return sb.ToString();
         }
+
+        // Пользовательская комманда открытия диалога стёртых объектов:
+        public static RoutedCommand CustomRoutedCommand_DialogListingDeletedFiles = new RoutedCommand();
+        private void ExecutedCustomCommand_DialogListingDeletedFiles(object sender, ExecutedRoutedEventArgs e)
+        {
+            List<Dictionary<string, string>> list_files = (List<Dictionary<string, string>>)e.Parameter;
+            //MessageBox.Show("Custom Command Executed: "+ e.Parameter);
+            //String str_path = e.Parameter.ToString();
+            List<string> txt = new List<string>();
+            int i = 0;
+            foreach(Dictionary<string, string> rec in list_files)
+            {
+                string ObjectType = null;
+                rec.TryGetValue("ObjectType", out ObjectType);
+                string SubjectUserName = null;
+                rec.TryGetValue("SubjectUserName", out SubjectUserName);
+                string SubjectDomainName = null;
+                rec.TryGetValue("SubjectDomainName", out SubjectDomainName);
+                string ObjectName = null;
+                rec.TryGetValue("ObjectName", out ObjectName);
+                string ProcessName = null;
+                rec.TryGetValue("ProcessName", out ProcessName);
+                string TimeCreated = null;
+                rec.TryGetValue("TimeCreated", out TimeCreated);
+                i++;
+
+                string txt_rec = String.Format("{0})\t {1}\t {2}\t {3}\t {4}\t {5}", i, TimeCreated, ObjectType, SubjectDomainName, SubjectUserName, ObjectName);
+                txt.Add(txt_rec);
+            }
+
+            DialogListingDeletedFiles window = new DialogListingDeletedFiles();
+
+            window.txtListFiles.Text = String.Join("\n", txt.ToArray() );
+                window.Show();
+            //gotoPathByWindowsExplorer(str_path);
+        }
+
 
         // Пользовательская команда:
         public static RoutedCommand CustomRoutedCommand = new RoutedCommand();
@@ -158,32 +211,8 @@ namespace FileChangesWatcher
                     _notifyIcon.ContextMenu.Items.Remove(obj.Value.mi);
                 }
 
-                // Заполнить новые пункты:
-                //Grid mi = null;
-                MenuItem mi = null;
-                foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray())
-                {
-                    if (File.Exists(obj.Key) == true || Directory.Exists(obj.Key) == true)
-                    {
-                        mi = obj.Value.mi;
-                        //mi.Children.Cast<MenuItem>().First(e=>Grid.GetRow(e)==0 && Grid.GetColumn(e)==0).FontWeight = FontWeights.Normal;
-                        mi.FontWeight = FontWeights.Normal;
-                        _notifyIcon.ContextMenu.Items.Insert(0, mi);
-                    }
-                    else
-                    {
-                        stackPaths.Remove(obj.Key);
-                    }
-                }
-                if (mi != null)
-                {
-                    //mi.FontWeight = FontWeights.Bold;
-                    //mi.Children.Cast<MenuItem>().First(e => Grid.GetRow(e) == 0 && Grid.GetColumn(e) == 0).FontWeight = FontWeights.Bold;
-                    mi.FontWeight = FontWeights.Bold;
-                }
-
                 // Максимальное количество файлов в списке должно быть не больше указанного максимального значения:
-                if (stackPaths.Count > log_contextmenu_size)
+                while (stackPaths.Count > log_contextmenu_size)
                 {
                     // Удалить самый старый элемент из списка путей и из меню
                     String first = stackPaths.OrderBy(d => d.Value.index).First().Key;
@@ -194,6 +223,40 @@ namespace FileChangesWatcher
                         _notifyIcon.ContextMenu.Items.Remove(_id.mi);
                     }
                     stackPaths.Remove(first);
+                }
+
+                // Заполнить новые пункты:
+                //Grid mi = null;
+                MenuItem mi = null;
+                foreach (var obj in stackPaths.OrderBy(d => d.Value.index).ToArray())
+                {
+                    switch(obj.Value.type)
+                    {
+                        case "file_folder":
+                                if ( File.Exists(obj.Key) == true || Directory.Exists(obj.Key) == true )
+                                {
+                                    mi = obj.Value.mi;
+                                    //mi.Children.Cast<MenuItem>().First(e=>Grid.GetRow(e)==0 && Grid.GetColumn(e)==0).FontWeight = FontWeights.Normal;
+                                    mi.FontWeight = FontWeights.Normal;
+                                    _notifyIcon.ContextMenu.Items.Insert(0, mi);
+                                }
+                                else
+                                {
+                                    stackPaths.Remove(obj.Key);
+                                }
+                            break;
+                        default:
+                                mi = obj.Value.mi;
+                                mi.FontWeight = FontWeights.Normal;
+                                _notifyIcon.ContextMenu.Items.Insert(0, mi);
+                            break;
+                    }
+                }
+                if (mi != null)
+                {
+                    //mi.FontWeight = FontWeights.Bold;
+                    //mi.Children.Cast<MenuItem>().First(e => Grid.GetRow(e) == 0 && Grid.GetColumn(e) == 0).FontWeight = FontWeights.Bold;
+                    mi.FontWeight = FontWeights.Bold;
                 }
             });
         }
@@ -279,6 +342,7 @@ namespace FileChangesWatcher
             //notifyIcon.ContextMenu.Items.Insert(0, new Separator() );  // http://stackoverflow.com/questions/4823760/how-to-add-horizontal-separator-in-a-dynamically-created-contextmenu
             CommandBinding customCommandBinding = new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand);
             _notifyIcon.ContextMenu.CommandBindings.Add(customCommandBinding);
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DialogListingDeletedFiles, ExecutedCustomCommand_DialogListingDeletedFiles, CanExecuteCustomCommand));
 
             initApplication(e);
         }
@@ -685,6 +749,7 @@ namespace FileChangesWatcher
             {
                 _notifyIcon.CloseBalloon();
                 // Получить владельца файла:
+                /*
                 string user_owner = null;
                 try
                 {
@@ -695,12 +760,13 @@ namespace FileChangesWatcher
                 {
                     user_owner = "<unknown>";
                 }
+                //*/
 
                 //DriveInfo di = new DriveInfo(Path.GetPathRoot(_path));
                 string s = Path.GetPathRoot(_path);
 
                 _notifyIcon.HideBalloonTip();
-                _notifyIcon.ShowBalloonTip("go to path:", "file owner: "+user_owner+"\n"+_path, BalloonIcon.Info);
+                _notifyIcon.ShowBalloonTip("go to path:", /*"file owner: "+user_owner+"\n"+*/ _path, BalloonIcon.Info);
                 bool_is_path_tooltip = true; // После клика или после исчезновения баллона этот флаг будет сброшен.
                 bool_is_ballow_was_shown = false;
                 //_notifyIcon.TrayBalloonTipClicked
@@ -842,9 +908,9 @@ namespace FileChangesWatcher
                         mi.Icon = null;
                     }
 
-                    MenuItemData id = new MenuItemData(mi, max_value + 1, user_owner);
+                    MenuItemData id = new MenuItemData(mi, MenuItemData.i, "file_folder" ); // user_owner
                     stackPaths.Add(_path, id);
-                    _notifyIcon.ContextMenu.Items.Insert(0, id.mi);
+                    //_notifyIcon.ContextMenu.Items.Insert(0, id.mi);
 
                     reloadCustomMenuItems();
                 }
@@ -868,6 +934,8 @@ namespace FileChangesWatcher
         // Определить все события, которые в данный момент находятся в dict_path_time.
         // После определения необходимо стереть все элементы, которые были на момент входа в функцию.
         // Вернуть список событий, которые были получены в результате обработки очереди.
+        // https://codewala.net/2013/10/04/reading-event-logs-efficiently-using-c/
+
         static List<Dictionary<string, string>> getDeleteInfo(/*string _path*/)
         {
             //string result = "неизвестный удалил "+_path;
@@ -948,6 +1016,14 @@ namespace FileChangesWatcher
                         XmlNode root = doc.DocumentElement;
 
                         Dictionary<string, string> dict_event_object = new Dictionary<string, string>();
+
+                        // Строки настраиваемых форматов даты и времени: https://msdn.microsoft.com/ru-ru/library/8kb3ddd4%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
+                        // http://stackoverflow.com/questions/3075659/what-is-the-time-format-of-windows-event-log
+                        XmlNode node_TimeCreated_SystemTime = root["System"].SelectSingleNode("def:TimeCreated[@SystemTime]", nsmgr);
+                        string str_TimeCreated_SystemTime = node_TimeCreated_SystemTime.Attributes.GetNamedItem("SystemTime").InnerText;
+                        DateTime dateValue = DateTime.Parse(str_TimeCreated_SystemTime, null, DateTimeStyles.None);
+                        string str_TimeCreated = dateValue.ToString();
+                        dict_event_object.Add("TimeCreated", str_TimeCreated);
 
                         XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
                         string str_ObjectName = node_ObjectName.InnerText;
@@ -1034,8 +1110,8 @@ namespace FileChangesWatcher
             {
                 Console.WriteLine("Error while reading the event logs");
                 StackTrace st = new StackTrace(ex, true);
-                int line_number_exeption = st.GetFrame(st.FrameCount - 1).GetFileLineNumber();
-                _notifyIcon.ShowBalloonTip("FileChangesWatcher", "in line: "+ line_number_exeption+"\n"+ex.Message, BalloonIcon.Error);
+                StackFrame st_frame = st.GetFrame(st.FrameCount - 1);
+                _notifyIcon.ShowBalloonTip("FileChangesWatcher", "in: " + st_frame.GetFileName() + ":(" + st_frame.GetFileLineNumber() + "," + st_frame.GetFileColumnNumber() + ")" + "\n" + ex.Message, BalloonIcon.Error);
             }
             return dict_event_path_object;
         }
@@ -1070,28 +1146,65 @@ namespace FileChangesWatcher
 
         private static void ShowPopupDeletePath(object sender, DoWorkEventArgs e)
         {
-            while (dict_path_time.Count > 0)
+            try
             {
-                List<Dictionary<string, string>> events = getDeleteInfo();
-                if(events.Count > 0)
+                List<Dictionary<string, string>> list_events = new List<Dictionary<string, string>>();
+                // Удаление иногда бывает длительным и нужно дождаться, пока стек файлов "опустеет" (наполняется он снаружи этого цикла):
+                while (dict_path_time.Count > 0)
                 {
-                    string str_path = null;
-                    events.First().TryGetValue("_user_friendly_path", out str_path);
-                    string SubjectUserName = null;
-                    events.First().TryGetValue("SubjectUserName", out SubjectUserName);
-                    string SubjectDomainName = null;
-                    events.First().TryGetValue("SubjectDomainName", out SubjectDomainName);
-                    _notifyIcon.ShowBalloonTip("FileChangesWatcher", "removed " + events.Count + " "+DateTime.Now+"\nlast: " + SubjectDomainName + "\\\\" + SubjectUserName + "\n" + str_path, BalloonIcon.Warning);
+                    List<Dictionary<string, string>> events = getDeleteInfo();
+                    if (events.Count > 0)
+                    {
+                        list_events.AddRange(events);
+                        _notifyIcon.ShowBalloonTip("FileChangesWatcher", "removed " + list_events.Count + " " + DateTime.Now /* + "\nlast: " + SubjectDomainName + "\\\\" + SubjectUserName + "\n" + str_path*/, BalloonIcon.Warning);
+                    }
                 }
+                string str_path = null;
+                list_events.First().TryGetValue("_user_friendly_path", out str_path);
+                string SubjectUserName = null;
+                list_events.First().TryGetValue("SubjectUserName", out SubjectUserName);
+                string SubjectDomainName = null;
+                list_events.First().TryGetValue("SubjectDomainName", out SubjectDomainName);
+
+                Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
+                {
+                    MenuItem mi = new MenuItem();
+                    str_path = "Removed "+list_events.Count +" object(s). Last one:\n" + str_path;
+                    mi.Header = str_path.Length > (menuitem_header_length * 2 + 5) ? str_path.Substring(0, menuitem_header_length) + " ... " + str_path.Substring(str_path.Length - menuitem_header_length) : str_path;
+                    mi.ToolTip = "Open dialog for listing of deleted objects.\n"+str_path;
+                    mi.Command = CustomRoutedCommand_DialogListingDeletedFiles;
+                    mi.CommandParameter = list_events;
+                    mi.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 255, 139, 0));
+
+                    MenuItemData id = new MenuItemData(mi, MenuItemData.i, "removed_items"); // user_owner
+                    MenuItem _temp = null;
+                    if(stackPaths.ContainsKey(str_path) == true)
+                    {
+                        stackPaths[str_path]=id;
+                        _notifyIcon.ShowBalloonTip("FileChangesWatcher", "Путь " + str_path + " уже добавлен в меню", BalloonIcon.Warning);
+                    }
+                    else
+                    {
+                        stackPaths.Add(str_path, id);
+                    }
+                    //_notifyIcon.ContextMenu.Items.Insert(0, id.mi);
+                    reloadCustomMenuItems();
+                });
+            }
+            catch( Exception ex )
+            {
+                Console.WriteLine("Error while reading the event logs");
+                StackTrace st = new StackTrace(ex, true);
+                StackFrame st_frame = st.GetFrame(st.FrameCount - 1);
+                _notifyIcon.ShowBalloonTip("FileChangesWatcher", "in: "+st_frame.GetFileName()+":(" + st_frame.GetFileLineNumber()+","+st_frame.GetFileColumnNumber()+")" + "\n" + ex.Message, BalloonIcon.Error);
             }
         }
 
+        // http://stackoverflow.com/questions/12570324/c-sharp-run-a-thread-every-x-minutes-but-only-if-that-thread-is-not-running-alr
         private static BackgroundWorker worker = new BackgroundWorker(); // Класс BackgroundWorker позволяет выполнить операцию в отдельном, выделенном потоке. https://msdn.microsoft.com/ru-ru/library/system.componentmodel.backgroundworker%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
 
-        private static int _lockFlag = 0; // 0 - free
-        private static Object thisLock = new Object();
         // Путь к файлу и время, когда вызвано событие (Искать в журнале будем с учётом этого времени -1с)
-        // Валидны только те записи, которые не старше 10 сек от момента проверки и только те пути,
+        // Валидны только те записи, которые не старше 60 сек от момента проверки и только те пути,
         // которые есть у наблюдателя (в логах пишутся много событий удаления)
         static ConcurrentDictionary<string, DateTime> dict_path_time = new ConcurrentDictionary<string, DateTime>();
 
@@ -1119,32 +1232,7 @@ namespace FileChangesWatcher
 
                 DateTime oldDateTime = DateTime.Now;
                 dict_path_time.AddOrUpdate(e.FullPath, DateTime.Now, (key, oldValue) => oldDateTime);
-
-                /*
-                if (Interlocked.CompareExchange(ref _lockFlag, 1, 0) == 0)
-                {
-                    // only 1 thread will enter here without locking the object/put the other threads to sleep.
-                    Monitor.Enter(thisLock);
-
-                    new Thread(delegate () 
-                    {
-                        try
-                        {
-                            while(dict_path_time.Count > 0)
-                            {
-                                ShowPopupDeletePath();
-                            }
-                            Interlocked.Decrement(ref _lockFlag);
-                        }
-                        finally
-                        {
-                            Monitor.Exit(thisLock);
-                        }
-                    }
-                    ).Start();
-                   // free the lock.
-                }
-                */
+                
                 if( !worker.IsBusy)
                 {
                     worker = new BackgroundWorker();
@@ -1154,13 +1242,6 @@ namespace FileChangesWatcher
                 {
                     Console.Write("skip");
                 }
-                /*
-                new Thread(delegate () {
-                    ShowPopupDeletePath(e.FullPath);
-                }).Start();
-                //*/
-                // Прочитать event log на предмет поиска только что удалённого файла:
-
                 return;
             }
 

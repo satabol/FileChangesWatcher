@@ -357,6 +357,22 @@ namespace FileChangesWatcher
         }
         //*/
 
+        public ICommand TestXamlWindowsOpen
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CanExecuteFunc = () => Application.Current.MainWindow == null,
+                    CommandAction = () =>
+                    {
+                        DialogListingDeletedFiles windows = new DialogListingDeletedFiles();
+                        windows.Show();
+                    }
+                };
+            }
+        }
+
         public ICommand ExitApplicationCommand
         {
             get
