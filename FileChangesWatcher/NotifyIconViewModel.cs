@@ -357,7 +357,7 @@ namespace FileChangesWatcher
         }
         //*/
 
-        public ICommand TestXamlWindowsOpen
+        public ICommand TestWebBrowser
         {
             get
             {
@@ -366,8 +366,9 @@ namespace FileChangesWatcher
                     CanExecuteFunc = () => Application.Current.MainWindow == null,
                     CommandAction = () =>
                     {
-                        DialogListingDeletedFiles windows = new DialogListingDeletedFiles();
-                        windows.Show();
+                        WebBrowserDialog browser = new WebBrowserDialog();
+                        browser.webBrowser.NavigateToString("<html><body>Hello????</body></html>");
+                        browser.Show();
                     }
                 };
             }

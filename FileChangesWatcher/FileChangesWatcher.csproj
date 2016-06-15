@@ -270,6 +270,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="AuditPolicy.cs" />
     <Compile Include="ContextMenuForFolders.cs" />
     <Compile Include="DialogListingDeletedFiles.xaml.cs">
       <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
@@ -280,11 +281,25 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="SimpleDialog.xaml.cs">
+      <DependentUpon>SimpleDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="WebBrowserDialog.xaml.cs">
+      <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
+    </Compile>
     <Page Include="DialogListingDeletedFiles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="NotifyIconResources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SimpleDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WebBrowserDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

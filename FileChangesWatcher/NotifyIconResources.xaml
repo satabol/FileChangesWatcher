@@ -115,6 +115,9 @@
             </MenuItem.Icon>
         </MenuItem>
         -->
+        <MenuItem Header="Test WebBrowser" Command="{Binding TestWebBrowser}">
+        </MenuItem>
+
         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}">
             <MenuItem.Icon>
                 <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>

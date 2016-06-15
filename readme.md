@@ -194,6 +194,8 @@ http://www.intelliadmin.com/index.php/2008/03/use-auditing-to-track-who-deleted-
 
 Включить систему аудита файлов (минимальная настройка для регистрации успешных событий):
 
+run **secpol.msc**
+
 ![](images/31.png)
 
 Настроить аудит файлов и каталогов, за которыми требуется установить наблюдение:
@@ -205,3 +207,21 @@ http://www.intelliadmin.com/index.php/2008/03/use-auditing-to-track-who-deleted-
 ![](images/33.png)
 
 Вот их программа и будет анализировать.
+
+## Дополнительные материалы по теме.
+
+Аудит удаления и доступа к файлам и запись событий в лог-файл средствами Powershell: https://habrahabr.ru/post/150149/
+
+![](images/34.png)
+
+Как открыть WPF WebBrowser страницу не по ссылке, а по содержимому: http://stackoverflow.com/questions/1598030/set-system-windows-controls-webbrowsers-content-to-a-static-html-literal?answertab=votes#tab-top
+
+![](images/35.png)
+
+C шарп.  Проверка существования элемента в коллекции по его значению: https://msdn.microsoft.com/ru-ru/library/bfed8bca%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
+
+![](images/36.png)
+
+Windows. Настройка политики безопасности Windows 10 Home Edition: http://winitpro.ru/index.php/2015/10/02/redaktor-gruppovyx-politik-dlya-windows-10-home-edition/
+
+![](images/37.png)
