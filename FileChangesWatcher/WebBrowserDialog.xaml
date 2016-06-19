@@ -4,7 +4,6 @@
         xmlns:local="clr-namespace:FileChangesWatcher"
         Title="WebBrowserDialog" Height="700" Width="700">
     <Grid>
-        <WebBrowser x:Name="webBrowser" 
-        />
+        <WebBrowser x:Name="webBrowser" />
     </Grid>
 </Window>

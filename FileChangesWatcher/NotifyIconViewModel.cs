@@ -19,6 +19,7 @@ using System.Diagnostics;
 using FileChangesWatcher;
 using Microsoft.Win32;
 using IniParser;
+using System.Reflection;
 
 //using Windows.UI.Notifications;
 //using NotificationsExtensions.Tiles; // NotificationsExtensions.Win10
@@ -203,7 +204,7 @@ namespace FileChangesWatcher
                 {
                     CommandAction = () =>
                     {
-                        if(FileChangesWatcher.App.IsUserAdministrator() == true)
+                        if(FileChangesWatcher.App._IsUserAdministrator == true)
                         {
                             App.registerDLL(App.getExeFilePath());
                         }
@@ -226,7 +227,7 @@ namespace FileChangesWatcher
                 {
                     CommandAction = () =>
                     {
-                        if (FileChangesWatcher.App.IsUserAdministrator() == true)
+                        if (FileChangesWatcher.App._IsUserAdministrator == true)
                         {
                             App.unregisterDLL(App.getExeFilePath());
                         }
@@ -363,15 +364,29 @@ namespace FileChangesWatcher
             {
                 return new DelegateCommand
                 {
-                    CanExecuteFunc = () => Application.Current.MainWindow == null,
+                    //CanExecuteFunc = () => Application.Current.MainWindow == null,
                     CommandAction = () =>
                     {
+                        string result = Properties.Resources.main_html_page;
+
                         WebBrowserDialog browser = new WebBrowserDialog();
-                        browser.webBrowser.NavigateToString("<html><body>Hello????</body></html>");
+                        //browser.webBrowser.NavigateToString("<!DOCTYPE html><html><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"/><body>Hello!!!<br/><br/>"+
+                        //                                    "<hr/><button>start explorer.exe</button><br/><hr/></body></html>");
+                        browser.webBrowser.NavigateToString(result);
                         browser.Show();
-                    }
+                    },
+                    CanExecuteFunc = () => true
                 };
             }
+        }
+
+        private static void ShowWebBrowser(object sender, DoWorkEventArgs e)
+        {
+            WebBrowserDialog browser = new WebBrowserDialog();
+            browser.webBrowser.Refresh(true);
+            browser.webBrowser.NavigateToString("<!DOCTYPE html><html><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"/><body>Hello!!!<br/><br/>"+
+                                                "<hr/><button>start explorer.exe</button><br/><hr/></body></html>");
+            browser.Show();
         }
 
         public ICommand ExitApplicationCommand

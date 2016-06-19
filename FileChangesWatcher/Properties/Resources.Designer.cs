@@ -59,5 +59,30 @@ namespace FileChangesWatcher.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;!DOCTYPE html&gt;
+        ///&lt;html&gt;
+        ///&lt;head&gt;
+        ///    &lt;meta http-equiv=&quot;content-type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+        ///&lt;/head&gt;
+        ///&lt;body&gt;
+        ///    Hello!!!
+        ///    &lt;br /&gt;
+        ///    &lt;br /&gt;
+        ///    &lt;hr /&gt;
+        ///    &lt;button id=&quot;id_start_explorer&quot;&gt;start explorer.exe&lt;/button&gt;
+        ///    &lt;br /&gt;
+        ///    &lt;button id=&quot;id_start_dialog&quot;&gt;start explorer.exe&lt;/button&gt;
+        ///    &lt;br /&gt;
+        ///    &lt;hr /&gt;
+        ///&lt;/body&gt;
+        ///&lt;/html&gt;.
+        /// </summary>
+        internal static string main_html_page {
+            get {
+                return ResourceManager.GetString("main_html_page", resourceCulture);
+            }
+        }
     }
 }
