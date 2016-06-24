@@ -284,6 +284,9 @@
     <Compile Include="SimpleDialog.xaml.cs">
       <DependentUpon>SimpleDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TrayPopup_test.xaml.cs">
+      <DependentUpon>TrayPopup_test.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WebBrowserDialog.xaml.cs">
       <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
     </Compile>
@@ -296,6 +299,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="SimpleDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TrayPopup_test.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -409,6 +416,8 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Icons\Enter.ico" />
+    <Resource Include="Icons\Clipboard.ico" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

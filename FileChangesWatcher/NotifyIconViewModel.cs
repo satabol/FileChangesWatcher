@@ -51,7 +51,7 @@ namespace FileChangesWatcher
             }
         }
 
-        public ICommand Mess
+        public ICommand MessRight
         {
             get
             {
@@ -59,7 +59,8 @@ namespace FileChangesWatcher
                 {
                     CommandAction = () =>
                     {
-                        switch(MessageBox.Show("Test: ", "", MessageBoxButton.OKCancel))
+                        /*
+                        switch(MessageBox.Show("Right : ", "", MessageBoxButton.OKCancel))
                         {
                             case MessageBoxResult.OK:
                                 SaveToDbOneChecked = SaveToDbOneChecked;
@@ -68,6 +69,23 @@ namespace FileChangesWatcher
                                 SaveToDbOneChecked = !SaveToDbOneChecked;
                                 break;
                         }
+                        //*/
+                        App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Вы нажали правую кнопку меню", BalloonIcon.Info);
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand MessLeft
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    CommandAction = () =>
+                    {
+                        App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Вы нажали левую кнопку меню", BalloonIcon.Info);
                     },
                     CanExecuteFunc = () => true
                 };
