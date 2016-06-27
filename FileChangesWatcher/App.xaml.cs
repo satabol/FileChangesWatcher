@@ -72,7 +72,7 @@ namespace FileChangesWatcher
     }
 
     // Существуют только два типа наблюдаемых объектов - файл и каталог.
-    enum WatchingObjectType
+    public enum WatchingObjectType
     {
         File, Folder
     }
@@ -216,7 +216,7 @@ namespace FileChangesWatcher
             System.Windows.Forms.Clipboard.SetText(text);
             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Path copied into a clipboard", BalloonIcon.Info);
         }
-        private static void copy_clipboard_with_popup(string text)
+        public static void copy_clipboard_with_popup(string text)
         {
             System.Windows.Forms.Clipboard.SetText(text);
             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Path copied into a clipboard", BalloonIcon.Info);
@@ -283,7 +283,7 @@ namespace FileChangesWatcher
             gotoPathByWindowsExplorer(obj.path, obj.wType);
         }
 
-        private static void gotoPathByWindowsExplorer(string _path, WatchingObjectType wType)
+        public static void gotoPathByWindowsExplorer(string _path, WatchingObjectType wType)
         {
             if (wType==WatchingObjectType.File)
             {
@@ -1166,8 +1166,10 @@ namespace FileChangesWatcher
                     bool_is_ballow_was_shown = false;
                     //*/
 
-                    TrayPopup_test popup_test = new TrayPopup_test();
+                    TrayPopup_test popup_test = new TrayPopup_test(_path, wType, _notifyIcon, TrayPopup_test.ControlButtons.Clipboard|TrayPopup_test.ControlButtons.Run);
                     _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 4000);
+
+                    /*
                     popup_test.text_message.Text = _path;
                     Button btn_copy_clipboard = ((Button)popup_test.FindName("btn_copy_clipboard"));
                     btn_copy_clipboard.Click+=(sender, args) =>
@@ -1208,6 +1210,7 @@ namespace FileChangesWatcher
                     {
                         temp.Stop();
                     };
+                    //*/
                     reloadCustomMenuItems();
                 }
             });
@@ -1242,7 +1245,10 @@ namespace FileChangesWatcher
                 currentMenuItem = id;
                 //_notifyIcon.ShowBalloonTip("FileChangesWatcher", logText, _ballonIcon);
 
-                TrayPopup_test popup_test = new TrayPopup_test();
+                TrayPopup_test popup_test = new TrayPopup_test(logText, WatchingObjectType.File, _notifyIcon, TrayPopup_test.ControlButtons.Clipboard);
+                _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 3000);
+
+                /*
                 popup_test.text_message.Text = logText;
                 _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 3000);
                 _notifyIcon.CustomBalloon.MouseEnter += (sender, args) =>
@@ -1254,6 +1260,7 @@ namespace FileChangesWatcher
                     //_notifyIcon.TrayPopupResolved.IsOpen = false;
                     _notifyIcon.CustomBalloon.IsOpen = false;
                 };
+                //*/
                 /*
                 TextBlock text_block = null;
                 if ( _notifyIcon.ApplyTemplate() ){
