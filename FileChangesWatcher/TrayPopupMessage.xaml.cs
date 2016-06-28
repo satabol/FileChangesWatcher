@@ -21,7 +21,7 @@ namespace FileChangesWatcher
     /// <summary>
     /// Interaction logic for TrayPopup_test.xaml
     /// </summary>
-    public partial class TrayPopup_test : UserControl
+    public partial class TrayPopupMessage : UserControl
     {
         public string path = null;
         public WatchingObjectType wType;
@@ -33,11 +33,11 @@ namespace FileChangesWatcher
             Clipboard=1, Run=2, Close=4
         };
 
-        public TrayPopup_test(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
+        private void init(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
         {
-            InitializeComponent();
             tb = _tb;
 
+            this.path = _path;
             this.text_message.Text = _path;
             this.wType = _wType;
 
@@ -51,7 +51,7 @@ namespace FileChangesWatcher
                 tb.CustomBalloon.IsOpen = false;
                 App.copy_clipboard_with_popup(_path);
             };
-            if( (_buttons & ControlButtons.Clipboard) == 0)
+            if ((_buttons & ControlButtons.Clipboard) == 0)
             {
                 btn_copy_clipboard.Visibility = Visibility.Hidden;
             }
@@ -80,16 +80,30 @@ namespace FileChangesWatcher
             {
                 temp.Start();
             };
-            this.MouseDown+= (sender, args) =>
+            /*
+            this.MouseDown += (sender, args) =>
             {
                 tb.CustomBalloon.IsOpen = false;
                 //this.Visibility = Visibility.Hidden;
                 App.gotoPathByWindowsExplorer(path, wType);
             };
-            this.ToolTipClosing+= (sender, args) =>
+            //*/
+            this.ToolTipClosing += (sender, args) =>
             {
                 temp.Stop();
             };
+        }
+
+        public TrayPopupMessage(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
+        {
+            InitializeComponent();
+            init(_path, _wType, _tb, _buttons);
+        }
+        public TrayPopupMessage(string _path, string _title, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
+        {
+            InitializeComponent();
+            this.title.Text = _title;
+            init(_path, _wType, _tb, _buttons);
         }
 
 

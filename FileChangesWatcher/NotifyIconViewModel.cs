@@ -20,6 +20,7 @@ using FileChangesWatcher;
 using Microsoft.Win32;
 using IniParser;
 using System.Reflection;
+using System.Windows.Interop;
 
 //using Windows.UI.Notifications;
 //using NotificationsExtensions.Tiles; // NotificationsExtensions.Win10
@@ -392,6 +393,24 @@ namespace FileChangesWatcher
                         //                                    "<hr/><button>start explorer.exe</button><br/><hr/></body></html>");
                         browser.webBrowser.NavigateToString(result);
                         browser.Show();
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand OpenAbout
+        {
+            get
+            {
+                return new DelegateCommand
+                {
+                    //CanExecuteFunc = () => Application.Current.MainWindow == null,
+                    CommandAction = () =>
+                    {
+                        About window = new About();
+                        window.Show();
+                        App.ActivateWindow(new WindowInteropHelper(window).Handle);
                     },
                     CanExecuteFunc = () => true
                 };

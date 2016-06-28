@@ -105,6 +105,11 @@
                     <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="About" Command="{Binding OpenAbout}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/FileChangesWatcher.16x16.ico" Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
             <!--
             <MenuItem Header="Share me to ..." Command="{Binding ShareMeByEmail}">
                 <MenuItem.Icon>

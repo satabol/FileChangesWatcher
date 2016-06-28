@@ -266,6 +266,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="About.xaml.cs">
+      <DependentUpon>About.xaml</DependentUpon>
+    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -284,12 +287,16 @@
     <Compile Include="SimpleDialog.xaml.cs">
       <DependentUpon>SimpleDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="TrayPopup_test.xaml.cs">
-      <DependentUpon>TrayPopup_test.xaml</DependentUpon>
+    <Compile Include="TrayPopupMessage.xaml.cs">
+      <DependentUpon>TrayPopupMessage.xaml</DependentUpon>
     </Compile>
     <Compile Include="WebBrowserDialog.xaml.cs">
       <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
     </Compile>
+    <Page Include="About.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="DialogListingDeletedFiles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -302,7 +309,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="TrayPopup_test.xaml">
+    <Page Include="TrayPopupMessage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

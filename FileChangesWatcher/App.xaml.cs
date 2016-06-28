@@ -213,13 +213,16 @@ namespace FileChangesWatcher
         private void ExecutedCustomCommand_CopyTextToClipboard(object sender, ExecutedRoutedEventArgs e)
         {
             String text = (string)e.Parameter;
+            copy_clipboard_with_popup(text);
+            /*
             System.Windows.Forms.Clipboard.SetText(text);
             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Path copied into a clipboard", BalloonIcon.Info);
+            */
         }
         public static void copy_clipboard_with_popup(string text)
         {
             System.Windows.Forms.Clipboard.SetText(text);
-            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Path copied into a clipboard", BalloonIcon.Info);
+            App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Message copied into a clipboard", BalloonIcon.Info);
         }
 
         // Пользовательская комманда отображения окна с текстовым содержанием:
@@ -227,13 +230,22 @@ namespace FileChangesWatcher
         private void ExecutedCustomCommand_ShowMessage(object sender, ExecutedRoutedEventArgs e)
         {
             String text = (string)e.Parameter;
-            //MessageBox.Show(text, "FileChangesWatcher", MessageBoxButton.OK);
+            ShowMessage(text);
+            /*
             DialogListingDeletedFiles window = new DialogListingDeletedFiles();
             window.txtListFiles.Text = text;
             window.Show();
             ActivateWindow(new WindowInteropHelper(window).Handle);
-            //SimpleDialog d = new SimpleDialog();
-            //d.Show();
+            */
+        }
+
+        private static void ShowMessage(string text)
+        {
+            //String text = (string)e.Parameter;
+            DialogListingDeletedFiles window = new DialogListingDeletedFiles();
+            window.txtListFiles.Text = text;
+            window.Show();
+            ActivateWindow(new WindowInteropHelper(window).Handle);
         }
 
         // Пользовательская комманда открытия диалога стёртых объектов:
@@ -241,11 +253,14 @@ namespace FileChangesWatcher
         private void ExecutedCustomCommand_DialogListingDeletedFiles(object sender, ExecutedRoutedEventArgs e)
         {
             List<Dictionary<string, string>> list_files = (List<Dictionary<string, string>>)e.Parameter;
-            //MessageBox.Show("Custom Command Executed: "+ e.Parameter);
-            //String str_path = e.Parameter.ToString();
+            DialogListingDeletedFiles(list_files);
+        }
+
+        private static void DialogListingDeletedFiles(List<Dictionary<string, string>> list_files)
+        {
             List<string> txt = new List<string>();
             int i = 0;
-            txt.Add( String.Format("{0})\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", "N", "TimeCreated", "ObjectType", "SubjectDomainName", "SubjectUserName", "ObjectName", "ProcessName"));
+            txt.Add(String.Format("{0})\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", "N", "TimeCreated", "ObjectType", "SubjectDomainName", "SubjectUserName", "ObjectName", "ProcessName"));
             foreach (Dictionary<string, string> rec in list_files)
             {
                 string ObjectType = null;
@@ -268,9 +283,8 @@ namespace FileChangesWatcher
 
             DialogListingDeletedFiles window = new DialogListingDeletedFiles();
 
-            window.txtListFiles.Text = String.Join("\n", txt.ToArray() );
-                window.Show();
-            //gotoPathByWindowsExplorer(str_path);
+            window.txtListFiles.Text = String.Join("\n", txt.ToArray());
+            window.Show();
         }
 
 
@@ -419,6 +433,7 @@ namespace FileChangesWatcher
                 //mi.Invoke(_notifyIcon, null);
                 _notifyIcon.ContextMenu.IsOpen = true;
             };
+            /*
             _notifyIcon.TrayBalloonTipClicked += (sender, args) =>
             {
                 //Hardcodet.Wpf.TaskbarNotification.Interop.Point p = _notifyIcon.GetPopupTrayPosition();
@@ -460,6 +475,7 @@ namespace FileChangesWatcher
                     //bool_is_path_tooltip = false;
                 }
             };
+            //*/
 
             // Эти два обработчика ошибок появились вынужденно.
             /*
@@ -476,6 +492,7 @@ namespace FileChangesWatcher
                оба флага и следующий баллон не будет восприниматься как баллон с путём к файлу.
                Долбанутый алгоритм. Короче просто триггер, чтобы пропустить один hide
              */
+             /*
             _notifyIcon.TrayBalloonTipClosed += (sender, args) =>
             {
                 if (bool_is_ballow_was_shown == true)
@@ -490,6 +507,7 @@ namespace FileChangesWatcher
             {
                 bool_is_ballow_was_shown = true;
             };
+            //*/
 
             //notifyIcon.ContextMenu.Items.Insert(0, new Separator() );  // http://stackoverflow.com/questions/4823760/how-to-add-horizontal-separator-in-a-dynamically-created-contextmenu
             //CommandBinding customCommandBinding = new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand);
@@ -696,7 +714,7 @@ namespace FileChangesWatcher
 
             _re_extensions = getExtensionsRegEx(data);
 
-            // Определить список каталогов, за которыми надо наблюдать:
+            // Определить список каталогов, за которыми надо наблюдать и проверить состояние аудита для этих каталогов:
             ///*
             list_folders_for_watch = new List<String>();
             for (int i = 0; i <= data.Sections["FoldersForWatch"].Count - 1; i++)
@@ -734,10 +752,13 @@ namespace FileChangesWatcher
                     {
                         init_text_message.Append("\n     Audit DeleteSubdirectoriesAndFiles is off. BAD. Turn it ON.");
                     }
+                    /*
                     if( is_Audit_Delete==false || is_Audit_DeleteSubdirectoriesAndFiles == false)
                     {
+                    // Вывести окно "свойства" для каталога:
                         ShowFileProperties(folder);
                     }
+                    //*/
 
                     // Определить имя диска и его физическое имя:
                     string drive_name = Path.GetPathRoot(folder);
@@ -807,6 +828,9 @@ namespace FileChangesWatcher
                 //_notifyIcon.ShowBalloonTip("Info", "No watching for folders. Set folders correctly.", BalloonIcon.Info);
             }
 
+            // Если пользователь администратор, то проверить наличие групповой политики, включающую регистрацию
+            // файловых событий в журнале безопасности windows. Без прав администратора нет возможности
+            // прочитать эту политику.
             if (_IsUserAdministrator == true)
             {
                 //Dictionary<AuditPolicy.AuditEventPolicy, AuditPolicy.AuditEventStatus> pol = AuditPolicy.GetPolicies();
@@ -841,7 +865,6 @@ namespace FileChangesWatcher
                 init_text_message.Append("You have to run this application as system administrator to catch windows security event log to find out who delete files.");
             }
             appendLogToDictionary("Initial settings.\n"+init_text_message.ToString(), BalloonIcon.Info);
-
         }
 
         public static Regex getExtensionsRegEx(IniParser.Model.IniData data)
@@ -875,7 +898,6 @@ namespace FileChangesWatcher
             foreach (String _path in _paths)
             {
                 // Отслеживание изменения в файловой системе:
-
                 // Для файлов:
                 {
                     FileSystemWatcher watcher = new FileSystemWatcher();
@@ -905,6 +927,7 @@ namespace FileChangesWatcher
                     watcher.EnableRaisingEvents = true;
                 }
                 // Для каталогов:
+                if(false==true)
                 {
                     FileSystemWatcher watcher = new FileSystemWatcher();
                     watchers.Add(watcher);
@@ -1036,7 +1059,7 @@ namespace FileChangesWatcher
                     mi.Command = CustomRoutedCommand;
                     mi.CommandParameter = new Path_ObjectType(_path, wType);
 
-                    // Получить иконку файла в меню:
+                    // Получить иконку файла для вывода в меню:
                     // http://www.codeproject.com/Articles/29137/Get-Registered-File-Types-and-Their-Associated-Ico
                     // Загрузить иконку файла в меню: http://stackoverflow.com/questions/94456/load-a-wpf-bitmapimage-from-a-system-drawing-bitmap?answertab=votes#tab-top
                     // Как-то зараза не грузится простым присваиванием.
@@ -1094,7 +1117,7 @@ namespace FileChangesWatcher
                         mi.Icon = null;
                     }
 
-                    if (wType == WatchingObjectType.File)
+                    //if (wType == WatchingObjectType.File)
                     {
                         // Так определять Grid гораздо проще: http://stackoverflow.com/questions/5755455/how-to-set-control-template-in-code
                         string str_template = @"
@@ -1144,12 +1167,15 @@ namespace FileChangesWatcher
                         Grid.SetRow(mi, 0);
                         Grid.SetColumn(mi_clipboard, 1);
                         Grid.SetRow(mi_clipboard, 0);
-                        Grid.SetColumn(mi_enter, 2);
-                        Grid.SetRow(mi_enter, 0);
                         mi_grid.Children.Add(mi);
                         mi_grid.Children.Add(mi_clipboard);
-                        mi_grid.Children.Add(mi_enter);
-                        
+
+                        if (wType == WatchingObjectType.File)
+                        {
+                            Grid.SetColumn(mi_enter, 2);
+                            Grid.SetRow(mi_enter, 0);
+                            mi_grid.Children.Add(mi_enter);
+                        }
                         mi = _mi;
                     }
 
@@ -1166,51 +1192,22 @@ namespace FileChangesWatcher
                     bool_is_ballow_was_shown = false;
                     //*/
 
-                    TrayPopup_test popup_test = new TrayPopup_test(_path, wType, _notifyIcon, TrayPopup_test.ControlButtons.Clipboard|TrayPopup_test.ControlButtons.Run);
-                    _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 4000);
+                    // Если текущий пункт меню является первым в стеке, то можно вывести баллон, иначе - нет, потому что возникло следующее событие
+                    // и его нельзя перекрывать старым баллоном.
+                    MenuItemData first_menuItemData = stackPaths.OrderBy(d => d.index).Last();
+                    if (first_menuItemData == menuItemData)
+                    {
 
-                    /*
-                    popup_test.text_message.Text = _path;
-                    Button btn_copy_clipboard = ((Button)popup_test.FindName("btn_copy_clipboard"));
-                    btn_copy_clipboard.Click+=(sender, args) =>
-                    {
-                        _notifyIcon.CustomBalloon.IsOpen = false;
-                        copy_clipboard_with_popup(_path);
-                    };
-                    Button btn_execute_file = ((Button)popup_test.FindName("btn_execute_file"));
-                    btn_execute_file.Click += (sender, args) =>
-                    {
-                        _notifyIcon.CustomBalloon.IsOpen = false;
-                        Process.Start(_path);
-                    };
-
-                    System.Timers.Timer temp = new System.Timers.Timer();
-                    temp.Interval = 2000;
-                    temp.Elapsed += new System.Timers.ElapsedEventHandler(customballoon_close);
-                    popup_test.MouseEnter += (sender, args) =>
-                    {
-                        _notifyIcon.ResetBalloonCloseTimer();
-                        if(temp.Enabled)
+                        TrayPopupMessage popup = new TrayPopupMessage(_path, wType, _notifyIcon, TrayPopupMessage.ControlButtons.Clipboard | TrayPopupMessage.ControlButtons.Run);
+                        popup.MouseDown += (sender, args) =>
                         {
-                            temp.Stop();
-                        }
-                    };
-                    popup_test.MouseLeave += (sender, args) =>
-                    {
-                        //_notifyIcon.TrayPopupResolved.IsOpen = false;
-                        //_notifyIcon.CustomBalloon.IsOpen = false;
-                        temp.Start();
-                    };
-                    popup_test.MouseDown+= (sender, args) =>
-                    {
-                        _notifyIcon.CustomBalloon.IsOpen = false;
-                        gotoPathByWindowsExplorer(_path, wType);
-                    };
-                    popup_test.ToolTipClosing+= (sender, args) =>
-                    {
-                        temp.Stop();
-                    };
-                    //*/
+                            _notifyIcon.CustomBalloon.IsOpen = false;
+                            App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                        };
+
+                        _notifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                    }
+
                     reloadCustomMenuItems();
                 }
             });
@@ -1243,36 +1240,21 @@ namespace FileChangesWatcher
                 MenuItemData id = MenuItemData.CreateLogRecord(mi, _ballonIcon, logText); // user_owner
                 stackPaths.Add(id);
                 currentMenuItem = id;
-                //_notifyIcon.ShowBalloonTip("FileChangesWatcher", logText, _ballonIcon);
+            //_notifyIcon.ShowBalloonTip("FileChangesWatcher", logText, _ballonIcon);
 
-                TrayPopup_test popup_test = new TrayPopup_test(logText, WatchingObjectType.File, _notifyIcon, TrayPopup_test.ControlButtons.Clipboard);
-                _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 3000);
-
-                /*
-                popup_test.text_message.Text = logText;
-                _notifyIcon.ShowCustomBalloon(popup_test, PopupAnimation.Fade, 3000);
-                _notifyIcon.CustomBalloon.MouseEnter += (sender, args) =>
+                // Если текущий пункт меню является первым в стеке, то можно вывести баллон, иначе - нет, потому что возникло следующее событие
+                // и его нельзя перекрывать старым баллоном.
+                MenuItemData first_menuItemData = stackPaths.OrderBy(d => d.index).Last();
+                if (first_menuItemData == id)
                 {
-                    _notifyIcon.ResetBalloonCloseTimer();
-                };
-                _notifyIcon.CustomBalloon.MouseLeave += (sender, args) =>
-                {
-                    //_notifyIcon.TrayPopupResolved.IsOpen = false;
-                    _notifyIcon.CustomBalloon.IsOpen = false;
-                };
-                //*/
-                /*
-                TextBlock text_block = null;
-                if ( _notifyIcon.ApplyTemplate() ){
-                    text_block = (TextBlock)_notifyIcon.FindName("text_message");
-                }
-                text_block.Text = logText;
-                _notifyIcon.TrayPopupResolved.Placement = PlacementMode.AbsolutePoint;
-                //_notifyIcon.TrayPopupResolved.PlacementTarget = _notifyIcon.GetPopupTrayPosition().X;
-                _notifyIcon.TrayPopupResolved.HorizontalOffset = _notifyIcon.GetPopupTrayPosition().X;
-                _notifyIcon.TrayPopupResolved.VerticalOffset = _notifyIcon.GetPopupTrayPosition().Y - 40; // Resolved.Height;
-                _notifyIcon.TrayPopupResolved.IsOpen = true;
-                */
+                    TrayPopupMessage popup = new TrayPopupMessage(logText, "Initial initialization", WatchingObjectType.File, _notifyIcon, TrayPopupMessage.ControlButtons.Clipboard);
+                    popup.MouseDown += (sender, args) =>
+                    {
+                        _notifyIcon.CustomBalloon.IsOpen = false;
+                        ShowMessage(logText);
+                    };
+                    _notifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 3000);
+                }                
                 reloadCustomMenuItems();
             });
         }
@@ -1379,7 +1361,7 @@ namespace FileChangesWatcher
                             EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, query);
                             logReader = new EventLogReader(eventsQuery);
                             eventdetail = logReader.ReadEvent();
-                            // Если записи из журнала прочитать не удалось, то читать их повторно
+                            // Если записи из журнала прочитать не удалось, то читать их повторно, но не больше 10 раз (1 сек по 0.1)
                             if (i++ > 10 || eventdetail != null)
                             {
                                 break;
@@ -1404,6 +1386,8 @@ namespace FileChangesWatcher
 
                             switch (str_EventID)
                             {
+                                // Не самый корректный способ определяющий удаление файла, но пока оставлю этот.
+                                // TODO: 4660 - реальное событие удаление, но бывает не во всех ОС. Надо разобраться в чём дело.
                                 case "4656":
                                     break;
                                 default:
@@ -1703,8 +1687,35 @@ namespace FileChangesWatcher
                     menuItemData.type = MenuItemData.Type.removed_items;
                     stackPaths.Add(menuItemData);
                     currentMenuItem = menuItemData;
-                    _notifyIcon.ShowBalloonTip("FileChangesWatcher", "removed " + list_events.Count + " " + DateTime.Now, BalloonIcon.Warning);
-                    //_notifyIcon.ContextMenu.Items.Insert(0, id.mi);
+
+                    // Если текущий пункт меню является первым в стеке, то можно вывести баллон, иначе - нет, потому что возникло следующее событие
+                    // и его нельзя перекрывать старым баллоном.
+                    MenuItemData first_menuItemData = stackPaths.OrderBy(d => d.index).Last();
+                    if (first_menuItemData == menuItemData)
+                    {
+                        // Взять первые три файла из списка и вывести их в диалоговое окно:
+                        //List<string> text = new List<string>();
+
+                        List<Dictionary<string,string>> temp_list =  list_events.GetRange(0, list_events.Count<=3 ? list_events.Count : 3 );
+                        List<string> temp_file_names = new List<string>();
+                        foreach(Dictionary<string, string> rec in temp_list)
+                        {
+                            string ObjectName = null;
+                            rec.TryGetValue("ObjectName", out ObjectName);
+                            temp_file_names.Add(ObjectName);
+                        }
+                        string str_for_message = String.Join("\n", temp_file_names);
+                        TrayPopupMessage popup = new TrayPopupMessage("Open dialog for listing of deleted objects\n\n"+ str_for_message, "removed " + list_events.Count + " " + DateTime.Now, WatchingObjectType.File, _notifyIcon, TrayPopupMessage.ControlButtons.Clipboard);
+                        popup.MouseDown+= (_sender, args) =>
+                        {
+                            _notifyIcon.CustomBalloon.IsOpen = false;
+                            DialogListingDeletedFiles(list_events);
+                        };
+                        // TODO: Подумать, как уведомлять пользователя об удалении файлов другим методом, потому что возможно прямо сейчас висит баллон,
+                        // который показывает пользователю, что файл поменялся, а это важнее, чем, например удаление файлов блокировки .git
+                        //_notifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                    }
+
                     reloadCustomMenuItems();
                 });
             }
@@ -1770,6 +1781,21 @@ namespace FileChangesWatcher
                 return;
             }
 
+            if(File.Exists(e.FullPath) == true)
+            {
+                wType = WatchingObjectType.File;
+            }
+            else if(Directory.Exists(e.FullPath)==true)
+            {
+                wType = WatchingObjectType.Folder;
+            }
+            else
+            {
+                // WTF???
+                //_notifyIcon.ShowBalloonTip("FileChangesWatcher", "Object " + e.FullPath + " not Exist!", BalloonIcon.Error);
+                return;
+            }
+
             // Проверить, а не начинается ли путь с исключения:
             for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
             {
@@ -1786,7 +1812,7 @@ namespace FileChangesWatcher
             
             // Если изменяемым является только каталог, то не регистрировать это изменение.
             // Я заметил возникновение этого события, когда я меняю что-то непосредственно в подкаталоге 
-            // (например, переименовываю его подфайл или подкаталог)
+            // (например, переименовываю его подфайл или подкаталога)
             // Не регистрировать изменения каталога (это не переименование)
             if ( wType==WatchingObjectType.Folder)
             {

@@ -1,0 +1,28 @@
+﻿<Window x:Class="FileChangesWatcher.About"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FileChangesWatcher"
+        mc:Ignorable="d"
+        Title="About" Height="300" Width="500" Background="#FF89CFFF" >
+    <Grid Margin="0,0,-358,3">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Column="1" Grid.Row="1" x:Name="text_message" Foreground="White" VerticalAlignment="top" TextWrapping="Wrap" Padding="5" FontSize="16" Margin="2,0,0,0" Width="434">
+            Author: Alex Zakharow<LineBreak/>
+            Email: <Hyperlink NavigateUri="mailto:alex-zaharow@yandex.ru?subject=FileChangesWatcher" RequestNavigate="Hyperlink_RequestNavigate">alex-zaharow@yandex.ru</Hyperlink><LineBreak/>
+            Repository: <Hyperlink NavigateUri="https://github.com/satabol/FileChangesWatcher" RequestNavigate="Hyperlink_RequestNavigate">https://github.com/satabol/FileChangesWatcher</Hyperlink><LineBreak/>
+        </TextBlock>
+        <TextBlock Grid.Column="1" Grid.Row="2" x:Name="text_version" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="top" TextWrapping="Wrap" Padding="5" FontSize="16" Margin="1,0,-95,0"></TextBlock>
+        <Button Grid.Column="1" Grid.Row="3" Content="Close" Click="Button_Click" FontSize="20" IsManipulationEnabled="True" IsEnabled="True" VerticalAlignment="Top" Margin="191,0,192,0"/>
+    </Grid>
+</Window>
