@@ -425,6 +425,7 @@
   <ItemGroup>
     <Resource Include="Icons\Enter.ico" />
     <Resource Include="Icons\Clipboard.ico" />
+    <Resource Include="Icons\close.ico" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

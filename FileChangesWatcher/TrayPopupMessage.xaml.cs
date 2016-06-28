@@ -118,5 +118,10 @@ namespace FileChangesWatcher
             System.Timers.Timer temp = ((System.Timers.Timer)sender);
             temp.Stop();
         }
+
+        private void btn_close_window_Click(object sender, RoutedEventArgs e)
+        {
+            this.Visibility = Visibility.Collapsed;
+        }
     }
 }
