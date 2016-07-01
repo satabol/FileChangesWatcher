@@ -1814,7 +1814,7 @@ namespace FileChangesWatcher
             // Я заметил возникновение этого события, когда я меняю что-то непосредственно в подкаталоге 
             // (например, переименовываю его подфайл или подкаталога)
             // Не регистрировать изменения каталога (это не переименование)
-            if ( wType==WatchingObjectType.Folder)
+            if ( wType==WatchingObjectType.Folder && e.ChangeType!=WatcherChangeTypes.Created)
             {
                 return;
             }
@@ -1865,6 +1865,21 @@ namespace FileChangesWatcher
                 {
                     return;
                 }
+            }
+
+            if (File.Exists(e.FullPath) == true)
+            {
+                wType = WatchingObjectType.File;
+            }
+            else if (Directory.Exists(e.FullPath) == true)
+            {
+                wType = WatchingObjectType.Folder;
+            }
+            else
+            {
+                // WTF???
+                //_notifyIcon.ShowBalloonTip("FileChangesWatcher", "Object " + e.FullPath + " not Exist!", BalloonIcon.Error);
+                return;
             }
 
             // Проверить, а не является ли расширение наблюдаемым?
