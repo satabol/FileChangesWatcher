@@ -911,7 +911,7 @@ namespace FileChangesWatcher
                     watcher.NotifyFilter = //NotifyFilters.LastAccess
                           NotifyFilters.LastWrite
                         | NotifyFilters.FileName
-                        //| NotifyFilters.DirectoryName
+                        | NotifyFilters.DirectoryName
                         ;
                     // Only watch text files.
                     // watcher.Filter = "*.*";
@@ -927,34 +927,34 @@ namespace FileChangesWatcher
                     watcher.EnableRaisingEvents = true;
                 }
                 // Для каталогов:
-                if(false==true)
-                {
-                    FileSystemWatcher watcher = new FileSystemWatcher();
-                    watchers.Add(watcher);
-                    watcher.IncludeSubdirectories = true;
+                //if(false==true)
+                //{
+                //    FileSystemWatcher watcher = new FileSystemWatcher();
+                //    watchers.Add(watcher);
+                //    watcher.IncludeSubdirectories = true;
 
-                    watcher.Path = _path;
-                    /* Watch for changes in LastAccess and LastWrite times, and
-                        the renaming of files or directories. */
-                    // TODO: требуется разделить на файлы и каталоги: http://stackoverflow.com/questions/3336637/net-filesystemwatcher-was-it-a-file-or-a-directory?answertab=votes#tab-top
-                    watcher.NotifyFilter = //NotifyFilters.LastAccess
-                          NotifyFilters.LastWrite
-                        //| NotifyFilters.FileName
-                        | NotifyFilters.DirectoryName
-                        ;
-                    // Only watch text files.
-                    // watcher.Filter = "*.*";
-                    watcher.Filter = "";
+                //    watcher.Path = _path;
+                //    /* Watch for changes in LastAccess and LastWrite times, and
+                //        the renaming of files or directories. */
+                //    // TODO: требуется разделить на файлы и каталоги: http://stackoverflow.com/questions/3336637/net-filesystemwatcher-was-it-a-file-or-a-directory?answertab=votes#tab-top
+                //    watcher.NotifyFilter = //NotifyFilters.LastAccess
+                //          NotifyFilters.LastWrite
+                //        //| NotifyFilters.FileName
+                //        | NotifyFilters.DirectoryName
+                //        ;
+                //    // Only watch text files.
+                //    // watcher.Filter = "*.*";
+                //    watcher.Filter = "";
 
-                    // Add event handlers.
-                    watcher.Changed += new FileSystemEventHandler(OnChanged_folder);
-                    watcher.Created += new FileSystemEventHandler(OnChanged_folder);
-                    watcher.Deleted += new FileSystemEventHandler(OnChanged_folder);
-                    watcher.Renamed += new RenamedEventHandler(OnRenamed_folder);
+                //    // Add event handlers.
+                //    watcher.Changed += new FileSystemEventHandler(OnChanged_folder);
+                //    watcher.Created += new FileSystemEventHandler(OnChanged_folder);
+                //    watcher.Deleted += new FileSystemEventHandler(OnChanged_folder);
+                //    watcher.Renamed += new RenamedEventHandler(OnRenamed_folder);
 
-                    // Begin watching:
-                    watcher.EnableRaisingEvents = true;
-                }
+                //    // Begin watching:
+                //    watcher.EnableRaisingEvents = true;
+                //}
             }
             return "Watching folders: \n" + String.Join("\n", _paths.ToArray());
         }
