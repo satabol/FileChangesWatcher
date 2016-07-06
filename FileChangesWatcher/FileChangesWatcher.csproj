@@ -340,6 +340,7 @@
     <EmbeddedResource Include="Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -426,6 +427,8 @@
     <Resource Include="Icons\Enter.ico" />
     <Resource Include="Icons\Clipboard.ico" />
     <Resource Include="Icons\close.ico" />
+    <Resource Include="Icons\deleted.ico" />
+    <Resource Include="Icons\deleted_16x16.ico" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
