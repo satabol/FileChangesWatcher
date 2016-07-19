@@ -327,6 +327,9 @@ namespace FileChangesWatcher
                                     memory.Position = 0;
                                     bitmapImage = new BitmapImage();
                                     bitmapImage.BeginInit();
+                                    // Принудительный resize иконки, потому что под xp WPF не умеет автоматически масштабировать иконки в меню.
+                                    bitmapImage.DecodePixelHeight = 16;
+                                    bitmapImage.DecodePixelWidth = 16;
                                     bitmapImage.StreamSource = memory;
                                     bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                                     bitmapImage.EndInit();
@@ -642,8 +645,14 @@ namespace FileChangesWatcher
         {
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
+                // TODO: нужно сделать синхронизацию по stackPaths, а то бывает, что изменение стека меню не успевает обновляться, в то время как появляется новое событие. В этом случае вылетает Exception.
+                // Примерно понял, как ускорить регенерацию меню. Нужно будет делать отложенную проверку на существование элементов, указанных в меню.
+                // Повесить таймер, который будет мониторить окончание работы это функции (reloadCustomMenuItems) и через 0.1 сек (например) запускать
+                // проверку существования объектов. Если эта функция снова будет вызвана, то прервать проверку существования объектов. Проверка продолжится автоматически после
+                // вызова (reloadCustomMenuItems)
+
                 // Сначала очистить пункты меню с путями к файлам:
-                foreach (var obj in stackPaths)
+                foreach (var obj in stackPaths )
                 {
                     _notifyIcon.ContextMenu.Items.Remove(obj.mi);
                 }
@@ -1161,6 +1170,7 @@ namespace FileChangesWatcher
             // Если пользователь администратор, то проверить наличие групповой политики, включающую регистрацию
             // файловых событий в журнале безопасности windows. Без прав администратора нет возможности
             // прочитать эту политику.
+            /*
             if (_IsUserAdministrator == true)
             {
                 //Dictionary<AuditPolicy.AuditEventPolicy, AuditPolicy.AuditEventStatus> pol = AuditPolicy.GetPolicies();
@@ -1194,6 +1204,7 @@ namespace FileChangesWatcher
                 init_text_message.Append("\n");
                 init_text_message.Append("You have to run this application as system administrator to catch windows security event log to find out who delete files.");
             }
+            //*/
             appendLogToDictionary("Initial settings.\n"+init_text_message.ToString(), BalloonIcon.Info);
         }
 
@@ -1992,10 +2003,16 @@ namespace FileChangesWatcher
         public static bool check_path_is_in_watchable(string user_friendly_path, WatchingObjectType wType) // string str_ObjectType)
         {
             bool bool_is_path_watchable = false;
-            foreach (string watch_folder in list_folders_for_watch)
+            foreach (string _watch_folder in list_folders_for_watch)
             {
+                string watch_folder = _watch_folder;
+                // Если путь в настройках заканчивается на обратную дробь, то удалить её. Если не удалить, то это повлияет на (1)
+                if (watch_folder.EndsWith("\\") == true)
+                {
+                    watch_folder = watch_folder.Substring(0, watch_folder.Length - 1);
+                }
                 if (user_friendly_path.Replace(watch_folder, "") == "" ||
-                    user_friendly_path.Replace(watch_folder, "")[0] == Path.DirectorySeparatorChar)
+                    user_friendly_path.Replace(watch_folder, "")[0] == Path.DirectorySeparatorChar /*(1)*/)
                 {
                     bool_is_path_watchable = true;
                 }
@@ -2142,10 +2159,12 @@ namespace FileChangesWatcher
         private static void OnChanged_file(object source, FileSystemEventArgs e)
         {
             WatchingObjectType wType = WatchingObjectType.File;
+            DateTime dt0 = DateTime.Now;
             if(Directory.Exists(e.FullPath))
             {
                 wType = WatchingObjectType.Folder;
             }
+            DateTime dt1 = DateTime.Now;
 
             if ( e.ChangeType==WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder )
             {

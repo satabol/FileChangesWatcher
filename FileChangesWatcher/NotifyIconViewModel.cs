@@ -147,7 +147,7 @@ namespace FileChangesWatcher
                             MessageBox.Show("Файл настроек не обнаружен.");
                         }else
                         {
-                            System.Diagnostics.Process.Start(iniFilePath);
+                            Process.Start(iniFilePath);
                         }
                     },
                     CanExecuteFunc = () => true
