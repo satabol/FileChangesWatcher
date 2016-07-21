@@ -2164,6 +2164,12 @@ namespace FileChangesWatcher
             {
                 wType = WatchingObjectType.Folder;
             }
+
+            if(wType != WatchingObjectType.File)
+            {
+                return;
+            }
+
             DateTime dt1 = DateTime.Now;
 
             if ( e.ChangeType==WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder )
@@ -2256,6 +2262,29 @@ namespace FileChangesWatcher
 
         private static void OnChanged_folder(object source, FileSystemEventArgs e)
         {
+            if (e.ChangeType != WatcherChangeTypes.Deleted)
+            {
+                WatchingObjectType wType = WatchingObjectType.File;
+                DateTime dt0 = DateTime.Now;
+                if (Directory.Exists(e.FullPath))
+                {
+                    wType = WatchingObjectType.Folder;
+                }
+                if (wType != WatchingObjectType.Folder)
+                {
+                    return;
+                }
+
+                if (e.ChangeType == WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder)
+                {
+                    return;
+                }
+            }
+            //if (check_path_is_in_watchable(e.FullPath, wType) == false)
+            if (check_path_is_in_watchable(e.FullPath, WatchingObjectType.Folder) == false)
+            {
+                return;
+            }
             // Застолбить место в меню:
             //MenuItemData menuItemData = new MenuItemData();
             //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
@@ -2263,8 +2292,29 @@ namespace FileChangesWatcher
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
                 menuItemData = new MenuItemData_CCRD(e, WatchingObjectType.Folder);
+                stackPaths.Add(menuItemData);
+                {
+                    TrayPopupMessage popup = null;
+                    if (e.ChangeType == WatcherChangeTypes.Deleted)
+                    {
+                        popup = new TrayPopupMessage(e.FullPath, e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, TrayPopupMessage.ControlButtons.Clipboard);
+                        popup.MouseDown += (sender, args) =>
+                        {
+                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                        };
+                    }
+                    else
+                    {
+                        popup = new TrayPopupMessage(e.FullPath, e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, TrayPopupMessage.ControlButtons.Clipboard);
+                        popup.MouseDown += (sender, args) =>
+                        {
+                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                            App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                        };
+                    }
+                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                }
             });
-            stackPaths.Add(menuItemData);
             reloadCustomMenuItems();
         }
         private static void OnCreated_folder(object source, FileSystemEventArgs e)
