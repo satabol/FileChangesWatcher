@@ -71,9 +71,9 @@ namespace FileChangesWatcher.Properties {
         ///    &lt;br /&gt;
         ///    &lt;br /&gt;
         ///    &lt;hr /&gt;
-        ///    &lt;button id=&quot;id_start_explorer&quot;&gt;start explorer.exe&lt;/button&gt;
+        ///    &lt;button id=&quot;id_start_explorer&quot;&gt;start1 explorer.exe&lt;/button&gt;
         ///    &lt;br /&gt;
-        ///    &lt;button id=&quot;id_start_dialog&quot;&gt;start explorer.exe&lt;/button&gt;
+        ///    &lt;button id=&quot;id_start_dialog&quot;&gt;start1 dialog&lt;/button&gt;
         ///    &lt;br /&gt;
         ///    &lt;hr /&gt;
         ///&lt;/body&gt;
