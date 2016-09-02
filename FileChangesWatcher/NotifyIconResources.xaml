@@ -53,7 +53,7 @@
             </MenuItem>
         </Grid>
         -->
-        <MenuItem Header="Settings" Background="Transparent">
+        <MenuItem Header="Settings" Background="Transparent" x:Name="menu_settings">
             <MenuItem.Icon>
                 <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>

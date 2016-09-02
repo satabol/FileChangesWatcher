@@ -30,8 +30,20 @@ namespace FileChangesWatcher
 
         public enum ControlButtons
         {
-            Clipboard=1, Run=2, Close=4
+            None=0, Clipboard=1, Run=2, Close=4
         };
+
+        public string TextMessage {
+            get {
+                return text_message.Text;
+            }
+            set {
+                text_message.Text = value;
+                temp.Stop();
+                temp.Start();
+            }
+
+        }
 
         private void init(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
         {
