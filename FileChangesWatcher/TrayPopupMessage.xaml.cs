@@ -27,6 +27,7 @@ namespace FileChangesWatcher
         public WatchingObjectType wType;
         public TaskbarIcon tb = null;
         private System.Timers.Timer temp = null;
+        //public Image item_image = null;
 
         public enum ControlButtons
         {
@@ -45,9 +46,14 @@ namespace FileChangesWatcher
 
         }
 
-        private void init(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
+        private void init(string _path, WatchingObjectType _wType, TaskbarIcon _tb, Image _item_image, ControlButtons _buttons)
         {
             tb = _tb;
+            item_image = _item_image;
+            Image img = ((Image)this.FindName("item_image"));
+            if (_item_image != null) {
+                img.Source = _item_image.Source;
+            }
 
             this.path = _path;
             this.text_message.Text = _path;
@@ -106,16 +112,18 @@ namespace FileChangesWatcher
             };
         }
 
+        /*
         public TrayPopupMessage(string _path, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
         {
             InitializeComponent();
             init(_path, _wType, _tb, _buttons);
         }
-        public TrayPopupMessage(string _path, string _title, WatchingObjectType _wType, TaskbarIcon _tb, ControlButtons _buttons)
+        //*/
+        public TrayPopupMessage(string _path, string _title, WatchingObjectType _wType, TaskbarIcon _tb, Image _item_image, ControlButtons _buttons )
         {
             InitializeComponent();
             this.title.Text = _title;
-            init(_path, _wType, _tb, _buttons);
+            init(_path, _wType, _tb, _item_image, _buttons);
         }
 
 
