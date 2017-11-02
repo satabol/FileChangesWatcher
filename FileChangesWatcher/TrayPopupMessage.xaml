@@ -1,9 +1,9 @@
 ﻿<UserControl x:Class="FileChangesWatcher.TrayPopupMessage"
+             xmlns:local="clr-namespace:FileChangesWatcher"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:FileChangesWatcher"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
              HorizontalAlignment="Right"
@@ -35,6 +35,7 @@
         <Button Grid.Column="4" Grid.Row="0" ToolTip="Close popup" x:Name="btn_close_window" Width="20" Click="btn_close_window_Click">
             <Image Source="Icons/close.ico" Width="20"></Image>
         </Button>
+        <Image Grid.Column="0" Grid.Row="1" Width="20" x:Name="item_image" VerticalAlignment="Top" Margin="0,5,0,0"></Image>
         <TextBlock Grid.Column="1" Grid.Row="1" x:Name="text_message" MinHeight="100" MinWidth="200" Foreground="White" MaxWidth="300" HorizontalAlignment="Center" VerticalAlignment="top" TextWrapping="Wrap" Padding="5" FontSize="14">test</TextBlock>
     </Grid> 
 </UserControl>

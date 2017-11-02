@@ -10,6 +10,14 @@ http://www.intelliadmin.com/index.php/2008/03/use-auditing-to-track-who-deleted-
 
 ![](images/1.png)
 
+## Можно ли отследить процесс, который изменил файл?
+
+Коротко - НЕТ.
+
+http://ebanshi.cc/questions/4262160/is-it-possible-to-identify-what-process-is-changing-a-file-with-filesystemwatche
+
+![](images/24.png)
+
 ## Примеры работы приложения.
 
 Редактор иконок редактирует файл:

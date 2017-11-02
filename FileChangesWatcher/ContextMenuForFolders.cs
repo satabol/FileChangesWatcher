@@ -160,7 +160,7 @@ namespace FileChangesWatcher
 
                         bool bool_folder_is_in_Section = false;
                         // Проверить, что расширение не наблюдается приложением:
-                        if (FileChangesWatcher.App.getExtensionsRegEx(data).IsMatch(ext) == true)
+                        if (FileChangesWatcher.App.getExtensionsRegEx(data, new string[] { "Extensions", "UserExtensions" }).IsMatch(ext) == true)
                         {
                             bool_folder_is_in_Section = true;
                         }
