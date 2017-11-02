@@ -37,6 +37,10 @@ using System.Resources;
 
 //using NotificationsExtensions.Tiles;
 
+// Сообщение при запуске: http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=57dbee8386b57cb9283e5b56
+// Общий вид программы:  http://serv-japp.stpr.ru:27080/images/ImageCRUD?_id=57dbeee586b57cb9283e5b59
+// Репозитрий: http://serv-japp.stpr.ru:7080/FileChangesWatcher/FileChangesWatcher
+
 namespace FileChangesWatcher
 {
 
@@ -1089,7 +1093,7 @@ namespace FileChangesWatcher
 
                 if (last_log_record != null) {
                     if (last_log_record.ObjectAreSame(new_log_record) == false || (new_log_record.dt - last_log_record.dt).TotalSeconds >= 1) {
-                        sw_log_file.Write(new_log_record.ToString());
+                        sw_log_file.Write(new_log_record.ToString());  // TODO: Тут однажды выскочило исключение, что нельзя писать в закрытый файл (при разархивации большого архива). Надо бы сделать проверку
                     }
                 }
                 else {
@@ -1226,7 +1230,7 @@ namespace FileChangesWatcher
         {
             StringBuilder init_text_message = new StringBuilder();
 
-            // Сбросить всех наблюдателей, установленных ранее:
+            // Сбросить всех наблюдателей, установленных ранее (при перезапуске настроек в уже запущенной программе):
             foreach (FileSystemWatcher watcher in list_watcher.ToArray() )
             {
                 watcher.EnableRaisingEvents = false;
@@ -2608,128 +2612,128 @@ namespace FileChangesWatcher
         // Обязательно ознакомиться с http://weblogs.asp.net/ashben/31773
         private static void OnChanged_file(object source, FileSystemEventArgs e)
         {
-            DateTime dt = DateTime.Now;
-            // Пропускать события файлов логов, иначе он только о себе и будет писать:
-            if( e.FullPath == getLogFileName() || e.FullPath==getHistoryFileName() )
-            {
-                return;
-            }
-
-            WatchingObjectType wType = WatchingObjectType.File;
-            DateTime dt0 = DateTime.Now;
-
-            if(e.ChangeType == WatcherChangeTypes.Deleted)
-            {
-                // При удалении файла я всегда знаю, что это именно файла
-                // Заодно и экономим, что при удалении не надо проверять тип объекта:
-                wType = WatchingObjectType.File;
-            }
-            else
-            {
-                if(Directory.Exists(e.FullPath))
-                {
-                    wType = WatchingObjectType.Folder;
+            try {
+                DateTime dt = DateTime.Now;
+                // Пропускать события файлов логов, иначе он только о себе и будет писать:
+                if (e.FullPath == getLogFileName() || e.FullPath == getHistoryFileName()) {
+                    return;
                 }
-            }
 
-            if(wType != WatchingObjectType.File)
-            {
-                return;
-            }
+                WatchingObjectType wType = WatchingObjectType.File;
+                DateTime dt0 = DateTime.Now;
 
-            DateTime dt1 = DateTime.Now;
+                if (e.ChangeType == WatcherChangeTypes.Deleted) {
+                    // При удалении файла я всегда знаю, что это именно файла
+                    // Заодно и экономим, что при удалении не надо проверять тип объекта:
+                    wType = WatchingObjectType.File;
+                } else {
+                    if (Directory.Exists(e.FullPath)) {
+                        wType = WatchingObjectType.Folder;
+                    }
+                }
 
-            if ( e.ChangeType==WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder )
-            {
-                return;
-            }
-            if( check_path_is_in_watchable(e.FullPath, wType, _re_extensions)==false)
-            {
-                return;
-            }
+                if (wType != WatchingObjectType.File) {
+                    return;
+                }
 
-            // Отображать этот элемент в меню при условии, что он в списке расширений пользователя:
-            if (check_path_is_in_watchable(e.FullPath, wType, _re_user_extensions) == true) {
-                // Застолбить место в меню:
-                _MenuItemData menuItemData = null;
-                if (Application.Current != null) {
-                    Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
-                    {
-                        menuItemData = new MenuItemData_CCRD(e, wType, dt);
-                    //OnChanged(source, e, WatchingObjectType.File, menuItemData);
-                    _MenuItemData last_menuItemData = null;
-                        if (App.stackPaths.Count > 0) {
-                        //last_menuItemData = App.stackPaths.OrderBy(d => d.index).Last();
-                        last_menuItemData = App.stackPaths.OrderBy(d => d.date_time).Last();
-                        }
+                DateTime dt1 = DateTime.Now;
 
-                    // Проверить, насколько давно выводилось предыдущее окно с сообщением:
-                    long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
-                        TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
+                if (e.ChangeType == WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder) {
+                    return;
+                }
+                if (check_path_is_in_watchable(e.FullPath, wType, _re_extensions) == false) {
+                    return;
+                }
 
-                        if (last_menuItemData != null && last_menuItemData.wType != WatchingObjectType.Log) {
-                            MenuItemData_CCRD last_menuItemData_ccrd = ((MenuItemData_CCRD)last_menuItemData);
-                        // Бывает, что некоторое приложение так "увлекается", что генерирует некоторые события по нескольку раз.
-                        // 
-                        // Решил не показывать быстровозникающие события одинакового типа над одним объектом:
-                        if (last_menuItemData_ccrd.e.ChangeType == e.ChangeType     // Типы совпадают?
-                                && last_menuItemData_ccrd.e.FullPath == e.FullPath        // Путь совпадает?
-                                && last_menuItemData_ccrd.wType == WatchingObjectType.File) // Полное имя совпадает?
-                            {
-                            // Проверить разницу во времени с предыдущим последним событием и если она меньше одной секунды,
-                            // то удалить предыдущее событие:
-                            double totalSeconds = (DateTime.Now - last_menuItemData_ccrd.date_time).TotalSeconds;
-                                if (totalSeconds <= 1.0) {
-                                    stackPaths.Remove(last_menuItemData);
-                                    _notifyIcon.ContextMenu.Items.Remove(last_menuItemData.mi);
-                                    last_menuItemData = null;
+                // Отображать этот элемент в меню при условии, что он в списке расширений пользователя:
+                if (check_path_is_in_watchable(e.FullPath, wType, _re_user_extensions) == true) {
+                    // Застолбить место в меню:
+                    _MenuItemData menuItemData = null;
+                    if (Application.Current != null) {
+                        Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
+                        {
+                            try {
+                                menuItemData = new MenuItemData_CCRD(e, wType, dt);
+                            //OnChanged(source, e, WatchingObjectType.File, menuItemData);
+                            _MenuItemData last_menuItemData = null;
+                                if (App.stackPaths.Count > 0) {
+                                //last_menuItemData = App.stackPaths.OrderBy(d => d.index).Last();
+                                last_menuItemData = App.stackPaths.OrderBy(d => d.date_time).Last();
                                 }
-                            }
-                        }
-                        stackPaths.Add(menuItemData);
-                    //if (last_menuItemData == null) // || last_menuItemData == menuItemData)
-                    if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
-                            TrayPopupMessage popup = null;
 
-                            BitmapImage bitmapImage = null;
-                            System.Windows.Controls.Image popup_image = null;
-                            String file_ext = Path.GetExtension(e.FullPath);
-                            // Кешировать иконки для файлов:
-                            if (_MenuItemData.icons_map.TryGetValue(file_ext, out bitmapImage) == true && bitmapImage != null) {
-                                popup_image = new System.Windows.Controls.Image();
-                                popup_image.Source = bitmapImage;
+                            // Проверить, насколько давно выводилось предыдущее окно с сообщением:
+                            long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
+                                TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
 
-                            }
-                            if (e.ChangeType == WatcherChangeTypes.Deleted) {
-                                popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
+                                if (last_menuItemData != null && last_menuItemData.wType != WatchingObjectType.Log) {
+                                    MenuItemData_CCRD last_menuItemData_ccrd = ((MenuItemData_CCRD)last_menuItemData);
+                                // Бывает, что некоторое приложение так "увлекается", что генерирует некоторые события по нескольку раз.
+                                // 
+                                // Решил не показывать быстровозникающие события одинакового типа над одним объектом:
+                                if (last_menuItemData_ccrd.e.ChangeType == e.ChangeType     // Типы совпадают?
+                                            && last_menuItemData_ccrd.e.FullPath == e.FullPath        // Путь совпадает?
+                                            && last_menuItemData_ccrd.wType == WatchingObjectType.File) // Полное имя совпадает?
+                                        {
+                                    // Проверить разницу во времени с предыдущим последним событием и если она меньше одной секунды,
+                                    // то удалить предыдущее событие:
+                                    double totalSeconds = (DateTime.Now - last_menuItemData_ccrd.date_time).TotalSeconds;
+                                        if (totalSeconds <= 1.0) {
+                                            stackPaths.Remove(last_menuItemData);
+                                            _notifyIcon.ContextMenu.Items.Remove(last_menuItemData.mi);
+                                            last_menuItemData = null;
+                                        }
+                                    }
+                                }
+                                stackPaths.Add(menuItemData);
+                            //if (last_menuItemData == null) // || last_menuItemData == menuItemData)
+                            if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
+                                    TrayPopupMessage popup = null;
+
+                                    BitmapImage bitmapImage = null;
+                                    System.Windows.Controls.Image popup_image = null;
+                                    String file_ext = Path.GetExtension(e.FullPath);
+                                // Кешировать иконки для файлов:
+                                if (_MenuItemData.icons_map.TryGetValue(file_ext, out bitmapImage) == true && bitmapImage != null) {
+                                        popup_image = new System.Windows.Controls.Image();
+                                        popup_image.Source = bitmapImage;
+
+                                    }
+                                    if (e.ChangeType == WatcherChangeTypes.Deleted) {
+                                        popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
                             TrayPopupMessage.ControlButtons.Clipboard
 #else
                             TrayPopupMessage.ControlButtons.None
 #endif
                             );
-                                popup.MouseDown += ( sender, args ) => {
-                                    App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                };
-                            } else {
-                                popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
+                                        popup.MouseDown += ( sender, args ) => {
+                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        };
+                                    } else {
+                                        popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
                             TrayPopupMessage.ControlButtons.Clipboard |
 #endif
                             TrayPopupMessage.ControlButtons.Run);
-                                popup.MouseDown += ( sender, args ) => {
-                                    App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                    App.gotoPathByWindowsExplorer(popup.path, popup.wType);
-                                };
+                                        popup.MouseDown += ( sender, args ) => {
+                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                            App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                                        };
+                                    }
+                                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                                    dt_prev_show_custom_ballon = DateTime.Now;
+                                }
+                            } catch (Exception _ex) {
+                                _ex = _ex;
                             }
-                            App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
-                            dt_prev_show_custom_ballon = DateTime.Now;
-                        }
-                    });
+                        });
+                    }
                 }
+                write_log(dt, e, wType);
+                reloadCustomMenuItems();
+            } catch (Exception _ex) {
+                _ex = _ex;
             }
-            write_log(dt, e, wType);
-            reloadCustomMenuItems();
         }
         private static void OnCreated_file(object source, FileSystemEventArgs e)
         {
@@ -2758,92 +2762,93 @@ namespace FileChangesWatcher
 
         private static void OnChanged_folder(object source, FileSystemEventArgs e)
         {
-            DateTime dt = DateTime.Now;
-            WatchingObjectType wType = WatchingObjectType.Unknown;  // При удалении указывается этот тип, т.к. после удаления уже неизвестно, что это было.
-            if (e.ChangeType == WatcherChangeTypes.Deleted)
-            {
-                // При удалени каталога я всегда знаю, что это именно каталог
-                // Заодно и экономим, что при удалении не надо проверять тип объекта методом Exists (метод затратный):
-                wType = WatchingObjectType.Folder;
-            }
-            else
-            {
-                wType = WatchingObjectType.File;
-                DateTime dt0 = DateTime.Now;
-                if (Directory.Exists(e.FullPath))
-                {
+            try {
+                DateTime dt = DateTime.Now;
+                WatchingObjectType wType = WatchingObjectType.Unknown;  // При удалении указывается этот тип, т.к. после удаления уже неизвестно, что это было.
+                if (e.ChangeType == WatcherChangeTypes.Deleted) {
+                    // При удалени каталога я всегда знаю, что это именно каталог
+                    // Заодно и экономим, что при удалении не надо проверять тип объекта методом Exists (метод затратный):
                     wType = WatchingObjectType.Folder;
+                } else {
+                    wType = WatchingObjectType.File;
+                    DateTime dt0 = DateTime.Now;
+                    if (Directory.Exists(e.FullPath)) {
+                        wType = WatchingObjectType.Folder;
+                    }
+                    if (wType != WatchingObjectType.Folder) {
+                        return;
+                    }
+
+                    if (e.ChangeType == WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder) {
+                        return;
+                    }
                 }
-                if (wType != WatchingObjectType.Folder)
-                {
+                //if (check_path_is_in_watchable(e.FullPath, wType) == false)
+                if (check_path_is_in_watchable(e.FullPath, WatchingObjectType.Folder, _re_extensions) == false) {
                     return;
                 }
+                // Застолбить место в меню:
+                //MenuItemData menuItemData = new MenuItemData();
+                //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
+                _MenuItemData menuItemData = null;
+                if (Application.Current != null) {
 
-                if (e.ChangeType == WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder)
-                {
-                    return;
-                }
-            }
-            //if (check_path_is_in_watchable(e.FullPath, wType) == false)
-            if (check_path_is_in_watchable(e.FullPath, WatchingObjectType.Folder, _re_extensions) == false)
-            {
-                return;
-            }
-            // Застолбить место в меню:
-            //MenuItemData menuItemData = new MenuItemData();
-            //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
-            _MenuItemData menuItemData = null;
-            if (Application.Current != null) {
-
-                Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
-                {
-                    menuItemData = new MenuItemData_CCRD(e, WatchingObjectType.Folder, dt);
-                    stackPaths.Add(menuItemData);
-
-                // Проверить, насколько давно выводилось предыдущее окно с сообщением:
-                long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
-                    TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
-                    System.Windows.Controls.Image popup_image = new System.Windows.Controls.Image();
+                    Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
                     {
-                        BitmapImage bi = new BitmapImage();
-                        bi.BeginInit();
-                        bi.UriSource = new Uri(@"Icons\folder-horizontal-open.png", UriKind.Relative);
-                        bi.EndInit();
-                        popup_image.Source = bi;
-                    }
-                    if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
-                        TrayPopupMessage popup = null;
-                        if (e.ChangeType == WatcherChangeTypes.Deleted) {
-                            popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
+                        try {
+                            menuItemData = new MenuItemData_CCRD(e, WatchingObjectType.Folder, dt);
+                            stackPaths.Add(menuItemData);
+
+                        // Проверить, насколько давно выводилось предыдущее окно с сообщением:
+                        long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
+                            TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
+                            System.Windows.Controls.Image popup_image = new System.Windows.Controls.Image();
+                            {
+                                BitmapImage bi = new BitmapImage();
+                                bi.BeginInit();
+                                bi.UriSource = new Uri(@"Icons\folder-horizontal-open.png", UriKind.Relative);
+                                bi.EndInit();
+                                popup_image.Source = bi;
+                            }
+                            if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
+                                TrayPopupMessage popup = null;
+                                if (e.ChangeType == WatcherChangeTypes.Deleted) {
+                                    popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
                             TrayPopupMessage.ControlButtons.Clipboard
 #else
                             TrayPopupMessage.ControlButtons.None
 #endif
                         );
-                            popup.MouseDown += ( sender, args ) => {
-                                App.NotifyIcon.CustomBalloon.IsOpen = false;
-                            };
-                        } else {
-                            popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
+                                    popup.MouseDown += ( sender, args ) => {
+                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                    };
+                                } else {
+                                    popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
                             TrayPopupMessage.ControlButtons.Clipboard
 #else
                             TrayPopupMessage.ControlButtons.None
 #endif
                         );
-                            popup.MouseDown += ( sender, args ) => {
-                                App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                App.gotoPathByWindowsExplorer(popup.path, popup.wType);
-                            };
+                                    popup.MouseDown += ( sender, args ) => {
+                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                                    };
+                                }
+                                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                                dt_prev_show_custom_ballon = DateTime.Now;
+                            }
+                        } catch (Exception _ex) {
+                            _ex = _ex;
                         }
-                        App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
-                        dt_prev_show_custom_ballon = DateTime.Now;
-                    }
-                });
+                    });
+                }
+                write_log(dt, e, wType);
+                reloadCustomMenuItems();
+            } catch (Exception _ex) {
+                _ex = _ex;
             }
-            write_log(dt, e, wType);
-            reloadCustomMenuItems();
         }
         private static void OnCreated_folder(object source, FileSystemEventArgs e)
         {
@@ -3034,35 +3039,34 @@ namespace FileChangesWatcher
         public static bool IsObjectWachable(string path, WatchingObjectType wType)
         {
             bool bool_wachable = false;
-            // Проверить, а не начинается ли путь с исключения:
-            for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++)
-            {
-                if (path.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
-                        (
-                            path.Replace(arr_folders_for_exceptions.ElementAt(i), "") == "" ||
-                            path.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
-                        )
-                    )
-                {
-                    return false;
-                }
-            }
-
-            if (wType == WatchingObjectType.File)
-            {
-                String file_name = Path.GetFileName(path);
-                if (_re_extensions.IsMatch(file_name) == false)
-                {
-                    return false;
-                }
-                // Проверить, а не начинается ли имя файла с исключения:
-                for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++)
-                {
-                    if (Path.GetFileNameWithoutExtension(path).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true)
-                    {
+            try {
+                // Проверить, а не начинается ли путь с исключения:
+                for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++) {
+                    if (path.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
+                            (
+                                path.Replace(arr_folders_for_exceptions.ElementAt(i), "") == "" ||
+                                path.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
+                            )
+                        ) {
                         return false;
                     }
                 }
+
+                if (wType == WatchingObjectType.File) {
+                    String file_name = Path.GetFileName(path);
+                    if (_re_extensions.IsMatch(file_name) == false) {
+                        return false;
+                    }
+                    // Проверить, а не начинается ли имя файла с исключения:
+                    for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++) {
+                        if (Path.GetFileNameWithoutExtension(path).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch(Exception _ex) {
+                _ex = _ex;
             }
             return true;
         }
