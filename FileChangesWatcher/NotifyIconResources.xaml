@@ -110,60 +110,7 @@
                     <Image Source="/Icons/FileChangesWatcher.16x16.ico" Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
-            <!--
-            <MenuItem Header="Share me to ..." Command="{Binding ShareMeByEmail}">
-                <MenuItem.Icon>
-                    <Image Source="/Icons/search.ico"   Width="16" Height="16"/>
-                </MenuItem.Icon>
-            </MenuItem>
-            -->
         </MenuItem>
-
-        <!--
-        <MenuItem Header="Test toast" Command="{Binding TestToast}">
-            <MenuItem.Icon>
-                <Image Source="/Icons/FileWatcher.ico"   Width="16" Height="16"/>
-            </MenuItem.Icon>
-        </MenuItem>
-        -->
-        <!--
-        Тестовые элементы меню. http://www.codeproject.com/Tips/599954/WPF-TemplateBinding-with-ControlTemplate
-        
-        <MenuItem Header="Test WebBrowser" Command="{Binding TestWebBrowser}">
-        </MenuItem>
-        <MenuItem Header="Test Customize">
-            <MenuItem.Template>
-                <ControlTemplate >
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Ellipse Height="35" Width="50" Fill="Green"  Grid.Column="0" Grid.Row="0"></Ellipse>
-                        <Ellipse Height="35" Width="50" Fill="Brown"  Grid.Column="1" Grid.Row="0">
-                        </Ellipse>
-                        <MenuItem x:Name="open_path" Header="Open File"  Grid.Column="0" Grid.Row="0" Command="{Binding MessLeft}">
-                            <MenuItem.Icon>
-                                <Image Source="/Icons/help.ico"   Width="16" Height="16"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem x:Name="copy_clipboard" ToolTip="Copy Path" Width="20" Grid.Column="1" Grid.Row="0" Command="{Binding MessRight}">
-                            <MenuItem.Icon>
-                                <Image Source="/Icons/Clipboard_16x16.ico"   Width="16" Height="16"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem x:Name="execute_file" ToolTip="Execute file" Width="20" Grid.Column="2" Grid.Row="0" Command="{Binding MessRight}">
-                            <MenuItem.Icon>
-                                <Image Source="/Icons/Enter.ico"   Width="16" Height="16"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                    </Grid>
-                </ControlTemplate>
-            </MenuItem.Template>
-        </MenuItem>
-        -->
-
         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}" x:Name="menu_exit">
             <MenuItem.Icon>
                 <Image Source="/Icons/FileChangesWatcher.ico"   Width="16" Height="16"/>

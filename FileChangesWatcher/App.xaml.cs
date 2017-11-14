@@ -380,51 +380,57 @@ namespace FileChangesWatcher
 
                         {
                             // Так определять Grid гораздо проще: http://stackoverflow.com/questions/5755455/how-to-set-control-template-in-code
-                            string str_template = @"
-                            <ControlTemplate 
-                                                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                                                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-                                                xmlns:tb='http://www.hardcodet.net/taskbar'
-                                                xmlns:local='clr-namespace:FileChangesWatcher'
-                             >
-                                <Grid x:Name='mi_grid'>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width='*'/>
-                                        <ColumnDefinition Width='20'/>
-                                        <ColumnDefinition Width='20'/>
-                                    </Grid.ColumnDefinitions>
-                                </Grid>
-                            </ControlTemplate>
-                        ";
+                        //    string str_template = @"
+                        //    <ControlTemplate 
+                        //                        xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                        //                        xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                        //                        xmlns:tb='http://www.hardcodet.net/taskbar'
+                        //                        xmlns:local='clr-namespace:FileChangesWatcher'
+                        //     >
+                        //        <Grid x:Name='mi_grid'>
+                        //            <Grid.ColumnDefinitions>
+                        //                <ColumnDefinition Width='*'/>
+                        //                <ColumnDefinition Width='20'/>
+                        //                <ColumnDefinition Width='20'/>
+                        //            </Grid.ColumnDefinitions>
+                        //        </Grid>
+                        //    </ControlTemplate>
+                        //";
                             MenuItem _mi = new MenuItem();
                             Grid mi_grid = null; // new Grid();
-                            ControlTemplate ct = (ControlTemplate)XamlReader.Parse(str_template);
+                            //ControlTemplate ct = (ControlTemplate)XamlReader.Parse(str_template);
+
+                            // Эксперимент сделать шаблон из ресурса, а не парсить строку:
+                            ControlTemplate ct = (ControlTemplate)System.Windows.Application.Current.Resources["MenuItemFileForContextMenu"];
                             _mi.Template = ct;
                             if (_mi.ApplyTemplate())
                             {
                                 mi_grid = (Grid)ct.FindName("mi_grid", _mi);
                             }
-                            MenuItem mi_clipboard = new MenuItem()
-                            {
-                                Name = "mi_clipboard"
-                            };
-                            mi_clipboard.Icon = new System.Windows.Controls.Image
-                            {
-                                Source = new BitmapImage(
-                                new Uri("pack://application:,,,/Icons/Clipboard.ico"))
-                            };
-                            mi_clipboard.ToolTip = "Copy path to clipboard";
+                            //MenuItem mi_clipboard = new MenuItem()
+                            //{
+                            //    Name = "mi_clipboard"
+                            //};
+                            //mi_clipboard.Icon = new System.Windows.Controls.Image
+                            //{
+                            //    Source = new BitmapImage(
+                            //    new Uri("pack://application:,,,/Icons/Clipboard.ico"))
+                            //};
+                            //mi_clipboard.ToolTip = "Copy path to clipboard";
+                            MenuItem mi_clipboard = (MenuItem)ct.FindName("mi_clipboard", _mi);
                             mi_clipboard.Command = App.CustomRoutedCommand_CopyTextToClipboard;
                             mi_clipboard.CommandParameter = _e.FullPath;
-                            MenuItem mi_enter = new MenuItem()
-                            {
-                                Name = "mi_enter"
-                            };
-                            mi_enter.Icon = new System.Windows.Controls.Image
-                            {
-                                Source = new BitmapImage(
-                                new Uri("pack://application:,,,/Icons/Enter.ico"))
-                            };
+                            //MenuItem mi_enter = new MenuItem()
+                            //{
+                            //    Name = "mi_enter"
+                            //};
+                            //mi_enter.Icon = new System.Windows.Controls.Image
+                            //{
+                            //    Source = new BitmapImage(
+                            //    new Uri("pack://application:,,,/Icons/Enter.ico"))
+                            //};
+
+                            MenuItem mi_enter = (MenuItem)ct.FindName("mi_enter", _mi);
                             // Если объект удалён, то нельзя его выполнить
                             if (_e.ChangeType != WatcherChangeTypes.Deleted)
                             {
@@ -435,18 +441,20 @@ namespace FileChangesWatcher
 
                             Grid.SetColumn(mi, 0);
                             Grid.SetRow(mi, 0);
-                            Grid.SetColumn(mi_clipboard, 1);
-                            Grid.SetRow(mi_clipboard, 0);
                             mi_grid.Children.Add(mi);
+                            //Grid.SetColumn(mi_clipboard, 1);
+                            //Grid.SetRow(mi_clipboard, 0);
 #if (!_Evgeniy)
-                            mi_grid.Children.Add(mi_clipboard);
+                            //mi_grid.Children.Add(mi_clipboard);
+                            mi_clipboard.Visibility = Visibility.Visible;
 #endif
-
+                            // Добавить кнопку для файла "Запустить файл" в правом столбце:
                             if (wType == WatchingObjectType.File)
                             {
-                                Grid.SetColumn(mi_enter, 2);
-                                Grid.SetRow(mi_enter, 0);
-                                mi_grid.Children.Add(mi_enter);
+                                //Grid.SetColumn(mi_enter, 2);
+                                //Grid.SetRow(mi_enter, 0);
+                                //mi_grid.Children.Add(mi_enter);
+                                mi_enter.Visibility = Visibility.Visible;
                             }
                             mi = _mi;
                         }

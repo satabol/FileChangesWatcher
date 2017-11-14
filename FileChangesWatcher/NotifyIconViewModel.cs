@@ -377,28 +377,6 @@ namespace FileChangesWatcher
         }
         //*/
 
-        public ICommand TestWebBrowser
-        {
-            get
-            {
-                return new DelegateCommand
-                {
-                    //CanExecuteFunc = () => Application.Current.MainWindow == null,
-                    CommandAction = () =>
-                    {
-                        string result = Properties.Resources.main_html_page;
-
-                        WebBrowserDialog browser = new WebBrowserDialog();
-                        //browser.webBrowser.NavigateToString("<!DOCTYPE html><html><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"/><body>Hello!!!<br/><br/>"+
-                        //                                    "<hr/><button>start explorer.exe</button><br/><hr/></body></html>");
-                        browser.webBrowser.NavigateToString(result);
-                        browser.Show();
-                    },
-                    CanExecuteFunc = () => true
-                };
-            }
-        }
-
         public ICommand OpenAbout
         {
             get

@@ -133,7 +133,9 @@ namespace FileChangesWatcher
             {
                 // popup_test.Visibility = Visibility.Hidden;
                 //this.Visibility = Visibility.Hidden;
-                tb.CustomBalloon.IsOpen = false;
+                if (tb.CustomBalloon != null) {
+                    tb.CustomBalloon.IsOpen = false;
+                }
             });
             System.Timers.Timer temp = ((System.Timers.Timer)sender);
             temp.Stop();

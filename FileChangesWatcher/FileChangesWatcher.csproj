@@ -350,6 +350,9 @@
       <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainStandalone.cs" />
+    <Compile Include="MenuItemFileForTrayContextMenu.xaml.cs">
+      <DependentUpon>MenuItemFileForTrayContextMenu.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -372,6 +375,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="MenuItemFileForTrayContextMenu.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="NotifyIconResources.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -379,6 +386,10 @@
     <Page Include="SimpleDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="TrayPopupMessage.xaml">
       <SubType>Designer</SubType>
