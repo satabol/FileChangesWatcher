@@ -105,11 +105,14 @@
                     <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Reset icons cache" Command="{Binding ResetIconsCache}"/>
             <MenuItem Header="About" Command="{Binding OpenAbout}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/FileChangesWatcher.16x16.ico" Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+
+
         </MenuItem>
         <MenuItem Header="Exit" Command="{Binding ExitApplicationCommand}" x:Name="menu_exit">
             <MenuItem.Icon>

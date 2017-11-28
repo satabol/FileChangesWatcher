@@ -34,6 +34,7 @@ using System.Windows.Markup;
 using System.Windows.Controls.Primitives;
 using System.Timers;
 using System.Resources;
+using SharepointSync;
 
 //using NotificationsExtensions.Tiles;
 
@@ -214,13 +215,13 @@ namespace FileChangesWatcher
             // Если объект существует, то активировать его меню:
             if (this.wType == WatchingObjectType.File)
             {
-                if (File.Exists(e.FullPath))
+                if (LongFile.Exists(e.FullPath))
                 {
                     bool_object_exists = true;
                 }
             }else if (this.wType == WatchingObjectType.Folder)
             {
-                if (Directory.Exists(e.FullPath))
+                if (LongDirectory.Exists(e.FullPath))
                 {
                     bool_object_exists = true;
                 }
@@ -302,100 +303,121 @@ namespace FileChangesWatcher
                         if(_e.ChangeType == WatcherChangeTypes.Renamed)
                         {
                             RenamedEventArgs _ee = (RenamedEventArgs)_e;
-                            mi.Header += "\n    " + App.ShortText(_ee.OldFullPath)+ " [OldFullPath]";
+                            string OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _ee, "oldFullPath");
+
+                            //try {
+                            //    mi.Header += "\n    " + App.ShortText(_ee.OldFullPath) + " [OldFullPath]";
+                            //}
+                            //catch (PathTooLongException) {
+                            //    mi.Header += "\n    " + App.ShortText(_ee.OldName) + " [OldName]";
+                            //}
                         }
                         mi.Command = App.CustomRoutedCommand;
                         mi.CommandParameter = new Path_ObjectType(_e.FullPath, wType);
 
-                        // Получить иконку файла для вывода в меню:
-                        // http://www.codeproject.com/Articles/29137/Get-Registered-File-Types-and-Their-Associated-Ico
-                        // Загрузить иконку файла в меню: http://stackoverflow.com/questions/94456/load-a-wpf-bitmapimage-from-a-system-drawing-bitmap?answertab=votes#tab-top
-                        // Как-то зараза не грузится простым присваиванием.
-                        String file_ext = Path.GetExtension(_e.FullPath);
-                        Icon mi_icon = null;
-                        BitmapImage bitmapImage = null;
+                        if(_wType==WatchingObjectType.File){
+                            // Получить иконку файла для вывода в меню:
+                            // http://www.codeproject.com/Articles/29137/Get-Registered-File-Types-and-Their-Associated-Ico
+                            // Загрузить иконку файла в меню: http://stackoverflow.com/questions/94456/load-a-wpf-bitmapimage-from-a-system-drawing-bitmap?answertab=votes#tab-top
+                            // Как-то зараза не грузится простым присваиванием.
+                            String file_ext = Path.GetExtension(_e.FullPath);
+                            Icon mi_icon = null;
+                            BitmapImage bitmapImage = null;
 
-                        // Кешировать иконки для файлов:
-                        if (icons_map.TryGetValue(file_ext, out bitmapImage) == true && bitmapImage!=null)
-                        {
-                        }
-                        else
-                        {
-                            ushort uicon=0;
-                            StringBuilder strB = new StringBuilder(_e.FullPath);
-                            try
-                            {
-                                // На сетевых путях выдаёт Exception. Поэтому к сожалению не годиться.
-                                //mi_icon = Icon.ExtractAssociatedIcon(_path);// getIconByExt(file_ext);
-
-                                // Этот метод работает: http://stackoverflow.com/questions/1842226/how-to-get-the-associated-icon-from-a-network-share-file?answertab=votes#tab-top
-                                IntPtr handle = App.ExtractAssociatedIcon(IntPtr.Zero, strB, out uicon);
-                                mi_icon = Icon.FromHandle(handle);
+                            // Кешировать иконки для файлов:
+                            if (icons_map.TryGetValue(file_ext, out bitmapImage) == true && bitmapImage != null) {
                             }
-                            catch (Exception ex)
-                            {
-                                mi_icon = null;
-                                icons_map.Add(file_ext, null);
-                            }
+                            else {
+                                ushort uicon=0;
+                                StringBuilder strB = new StringBuilder(_e.FullPath);
+                                try {
+                                    // На сетевых путях выдаёт Exception. Поэтому к сожалению не годиться.
+                                    //mi_icon = Icon.ExtractAssociatedIcon(_path);// getIconByExt(file_ext);
 
-                            if (mi_icon != null)
-                            {
-                                using (MemoryStream memory = new MemoryStream())
-                                {
-                                    mi_icon.ToBitmap().Save(memory, ImageFormat.Png);
-                                    memory.Position = 0;
-                                    bitmapImage = new BitmapImage();
-                                    bitmapImage.BeginInit();
-                                    // Принудительный resize иконки, потому что под xp WPF не умеет автоматически масштабировать иконки в меню.
-                                    bitmapImage.DecodePixelHeight = 16;
-                                    bitmapImage.DecodePixelWidth = 16;
-                                    bitmapImage.StreamSource = memory;
-                                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                                    bitmapImage.EndInit();
-                                    if( strB.ToString().ToLower().EndsWith("shell32.dll")==true && uicon == 1)
-                                    {
-                                        // Это означает, что нужно отобразить иконку для несуществующего файла или иконка не найдена user32.Dll,1
-                                        // http://forum.vingrad.ru/topic-26161.html
-                                        // https://msdn.microsoft.com/ru-ru/library/windows/desktop/ms648067%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
-                                        // 
-                                    }
-                                    else
-                                    {
-                                        icons_map.Add(file_ext, bitmapImage);
+                                    // Этот метод работает: http://stackoverflow.com/questions/1842226/how-to-get-the-associated-icon-from-a-network-share-file?answertab=votes#tab-top
+                                    IntPtr handle = App.ExtractAssociatedIcon(IntPtr.Zero, strB, out uicon);
+                                    mi_icon = Icon.FromHandle(handle);
+                                }
+                                catch (Exception ex) {
+                                    mi_icon = null;
+                                    icons_map.Add(file_ext, null);
+                                }
+
+                                if (mi_icon != null) {
+                                    using (MemoryStream memory = new MemoryStream()) {
+                                        //{  // https://social.msdn.microsoft.com/Forums/vstudio/en-US/d3181462-6923-4b0d-b9cc-987a252c4202/access-violation-after-creating-a-bitmap-with-pixel-data?forum=csharpgeneral
+                                        //    Bitmap bmp = new Bitmap(mi_icon.Width, mi_icon.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                                        //    Rectangle rect = new Rectangle(0, 0, mi_icon.Width, mi_icon.Height);
+                                        //    BitmapData bmpData = bmp.LockBits(rect, ImageLockMode.WriteOnly, bmp.PixelFormat);
+                                        //    System.Runtime.InteropServices.Marshal.Copy(pixelData, 0, bmpData.Scan0,
+                                        //        this.Stride * this.Height);
+                                        //    bmp.UnlockBits(bmpData);
+                                        //}
+
+                                        Bitmap bitmap = mi_icon.ToBitmap();
+                                        bitmap.Save(memory, ImageFormat.Png);
+
+                                        //mi_icon.Save(memory);
+                                        memory.Position = 0;
+
+                                        //Bitmap Logo = new Bitmap(mi_icon.ToBitmap());
+                                        ////Logo.MakeTransparent(Logo.GetPixel(1, 1));
+                                        //Logo.Save(memory, ImageFormat.Png);
+                                        //memory.Position = 0;
+
+                                        bitmapImage = new BitmapImage();
+                                        bitmapImage.BeginInit();
+                                        // Принудительный resize иконки, потому что под xp WPF не умеет автоматически масштабировать иконки в меню.
+                                        bitmapImage.DecodePixelHeight = 16;
+                                        bitmapImage.DecodePixelWidth = 16;
+                                        bitmapImage.StreamSource = memory;
+                                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad; //.Default; //.OnLoad;
+                                        bitmapImage.EndInit();
+                                        if (strB.ToString().ToLower().EndsWith("shell32.dll") == true && uicon == 1) {
+                                            // Это означает, что нужно отобразить иконку для несуществующего файла или иконка не найдена user32.Dll,1
+                                            // http://forum.vingrad.ru/topic-26161.html
+                                            // https://msdn.microsoft.com/ru-ru/library/windows/desktop/ms648067%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+                                            // 
+                                        }
+                                        else {
+                                            icons_map.Add(file_ext, bitmapImage);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        if (bitmapImage != null)
-                        {
-                            mi.Icon = new System.Windows.Controls.Image
-                            {
-                                Source = bitmapImage
+                            if (bitmapImage != null) {
+                                mi.Icon = new System.Windows.Controls.Image {
+                                    Source = bitmapImage
+                                };
+                            }
+                            else {
+                                mi.Icon = null;
+                            }
+                        }else if (_wType == WatchingObjectType.Folder) {
+                            mi.Icon = new System.Windows.Controls.Image {
+                                Source = new BitmapImage(
+                                new Uri("pack://application:,,,/Icons/folder-horizontal-open.png"))
                             };
-                        }
-                        else
-                        {
-                            mi.Icon = null;
                         }
 
                         {
                             // Так определять Grid гораздо проще: http://stackoverflow.com/questions/5755455/how-to-set-control-template-in-code
-                        //    string str_template = @"
-                        //    <ControlTemplate 
-                        //                        xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                        //                        xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-                        //                        xmlns:tb='http://www.hardcodet.net/taskbar'
-                        //                        xmlns:local='clr-namespace:FileChangesWatcher'
-                        //     >
-                        //        <Grid x:Name='mi_grid'>
-                        //            <Grid.ColumnDefinitions>
-                        //                <ColumnDefinition Width='*'/>
-                        //                <ColumnDefinition Width='20'/>
-                        //                <ColumnDefinition Width='20'/>
-                        //            </Grid.ColumnDefinitions>
-                        //        </Grid>
-                        //    </ControlTemplate>
-                        //";
+                            //    string str_template = @"
+                            //    <ControlTemplate 
+                            //                        xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                            //                        xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                            //                        xmlns:tb='http://www.hardcodet.net/taskbar'
+                            //                        xmlns:local='clr-namespace:FileChangesWatcher'
+                            //     >
+                            //        <Grid x:Name='mi_grid'>
+                            //            <Grid.ColumnDefinitions>
+                            //                <ColumnDefinition Width='*'/>
+                            //                <ColumnDefinition Width='20'/>
+                            //                <ColumnDefinition Width='20'/>
+                            //            </Grid.ColumnDefinitions>
+                            //        </Grid>
+                            //    </ControlTemplate>
+                            //";
                             MenuItem _mi = new MenuItem();
                             Grid mi_grid = null; // new Grid();
                             //ControlTemplate ct = (ControlTemplate)XamlReader.Parse(str_template);
@@ -403,6 +425,7 @@ namespace FileChangesWatcher
                             // Эксперимент сделать шаблон из ресурса, а не парсить строку:
                             ControlTemplate ct = (ControlTemplate)System.Windows.Application.Current.Resources["MenuItemFileForContextMenu"];
                             _mi.Template = ct;
+
                             if (_mi.ApplyTemplate())
                             {
                                 mi_grid = (Grid)ct.FindName("mi_grid", _mi);
@@ -708,7 +731,6 @@ namespace FileChangesWatcher
                 reloadCustomMenuItems_timer.AutoReset = false;
                 reloadCustomMenuItems_timer.Enabled = true;
             }
-
         }
 
         private static void ReloadCustomMenuItems_timer_Elapsed( object sender, ElapsedEventArgs e ) {
@@ -736,6 +758,7 @@ namespace FileChangesWatcher
                 }
                 //*/
                     string[] lst_items_name = { "menu_separator", "menu_settings", "menu_exit" };
+
                     lock (_notifyIcon.ContextMenu.Items) {
                         for (int i = _notifyIcon.ContextMenu.Items.Count - 1; i >= 0; i--) {
                             if (Array.IndexOf(lst_items_name, ((Control)_notifyIcon.ContextMenu.Items.GetItemAt(i)).Name) < 0) {
@@ -769,13 +792,15 @@ namespace FileChangesWatcher
                             _MenuItemData _md = md;
 
                             // Если запись предназначена для файла, то сделать меню полным:
-                            if( md is MenuItemData_CCRD) {
+                            if ( md is MenuItemData_CCRD) {
                                 MenuItemData_CCRD md_ccrd = ((MenuItemData_CCRD)md);
                                 _md = new MenuItemData_CCRD(md_ccrd.e, md_ccrd.wType, md_ccrd.date_time, false);
                             }
                             _stackPaths.Add(_md);
                         }
                         stackPaths = _stackPaths;
+
+
 
                         // Заполнить новые пункты:
                         //Grid mi = null;
@@ -971,8 +996,8 @@ namespace FileChangesWatcher
                 if (fsea.ChangeType == WatcherChangeTypes.Renamed)
                 {
                     RenamedEventArgs _fsea = (RenamedEventArgs)fsea;
-                    //mi.Header += "\n    " + App.ShortText(_ee.OldFullPath) + " [OldFullPath]";
-                    str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, _fsea.OldFullPath);
+                    string OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _fsea, "oldFullPath");
+                    str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, OldFullPath); //str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, _fsea.OldFullPath);
                 }
                 else
                 {
@@ -986,8 +1011,8 @@ namespace FileChangesWatcher
                 string date_time = dt.Ticks.ToString(); //.ToString("yyyy.MM.dd HH:mm:ss.fff");
                 if (fsea.ChangeType == WatcherChangeTypes.Renamed) {
                     RenamedEventArgs _fsea = (RenamedEventArgs)fsea;
-                    //mi.Header += "\n    " + App.ShortText(_ee.OldFullPath) + " [OldFullPath]";
-                    str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, _fsea.OldFullPath);
+                    string OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _fsea, "oldFullPath");
+                    str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, OldFullPath);//str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}\t{4}", date_time, _fsea.ChangeType.ToString(), wType.ToString(), _fsea.FullPath, _fsea.OldFullPath);
                 }
                 else {
                     str_record = String.Format("\r\n{0}\t{1}\t{2}\t{3}", date_time, fsea.ChangeType.ToString(), wType.ToString(), fsea.FullPath);
@@ -1011,7 +1036,8 @@ namespace FileChangesWatcher
                         {
                             RenamedEventArgs _fsea = (RenamedEventArgs)fsea;
                             RenamedEventArgs _o_fsea = (RenamedEventArgs)o.fsea;
-                            if( _fsea.FullPath==_o_fsea.FullPath && _fsea.OldFullPath == _o_fsea.OldFullPath)
+                            string _o_fsea_OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _fsea, "oldFullPath");
+                            if ( _fsea.FullPath==_o_fsea.FullPath && _fsea.OldFullPath == _o_fsea_OldFullPath)
                             {
                             }
                             else
@@ -1047,7 +1073,7 @@ namespace FileChangesWatcher
         static System.Timers.Timer flush_buffer_timer = null;
 
         // Блокировщик write_log для другого потока:
-        static object lock_write_log = new object();
+        private readonly static object lock_write_log = new object();  // https://www.codeproject.com/Tips/758494/Smarter-than-lock-Cleaner-than-TryEnter "You should always lock on a private readonly object"
 
         // Имя файла лога, в который была сделана последняя запись:
         static string string_log_file_name = "";
@@ -1064,6 +1090,10 @@ namespace FileChangesWatcher
                 struct_log_record new_log_record = null;
                 if (_e != null) {
                     new_log_record = new struct_log_record(dt, _e, wType);
+                }
+
+                if (new_log_record == null) {
+
                 }
 
                 string str_file_path = getLogFileName();
@@ -1101,7 +1131,7 @@ namespace FileChangesWatcher
 
                 if (last_log_record != null) {
                     if (last_log_record.ObjectAreSame(new_log_record) == false || (new_log_record.dt - last_log_record.dt).TotalSeconds >= 1) {
-                        sw_log_file.Write(new_log_record.ToString());  // TODO: Тут однажды выскочило исключение, что нельзя писать в закрытый файл (при разархивации большого архива). Надо бы сделать проверку
+                        sw_log_file.Write(new_log_record.ToString());  // TODO: Тут однажды выскочило исключение, что нельзя писать в закрытый файл (при разархивации большого архива). Надо бы сделать проверку. Может быть сработал таймер ниже. (Больше одной секунды).
                     }
                 }
                 else {
@@ -1115,8 +1145,22 @@ namespace FileChangesWatcher
                     flush_buffer_timer.Stop();
                 }
                 flush_buffer_timer = new System.Timers.Timer(1000);
-                flush_buffer_timer.Elapsed += Flush_buffer_timer_Elapsed;
                 flush_buffer_timer.AutoReset = false;
+                flush_buffer_timer.Elapsed += //Flush_buffer_timer_Elapsed;
+                    (sender, e) => {
+                        // https://stackoverflow.com/questions/2416793/why-is-lock-much-slower-than-monitor-tryenter
+
+                        //if(Monitor.TryEnter(lock_write_log)) 
+                        lock (lock_write_log) {
+                            if (sw_log_file != null) {
+                                sw_log_file.Flush();
+                                sw_log_file.Close();
+                                sw_log_file = null;
+                                string_log_file_name = "";
+                            }
+                            flush_buffer_timer = null;
+                        }
+                    };
                 flush_buffer_timer.Enabled = true;
 
                 /*
@@ -1263,7 +1307,7 @@ namespace FileChangesWatcher
             IniParser.Model.IniData data = new IniParser.Model.IniData();
             String iniFilePath = getIniFilePath();
 
-            if (File.Exists(iniFilePath) == false)
+            if (LongFile.Exists(iniFilePath) == false)
             {
                 data.Sections.AddSection("Comments");
                 data.Sections.AddSection("General");
@@ -1395,7 +1439,7 @@ namespace FileChangesWatcher
                 }
                 else
                 {
-                    if( Directory.Exists( string_log_path ))
+                    if( LongDirectory.Exists( string_log_path ))
                     {
                     }
                     else
@@ -1429,7 +1473,7 @@ namespace FileChangesWatcher
             for (int i = 0; i <= data.Sections["FoldersForWatch"].Count - 1; i++)
             {
                 String folder = data.Sections["FoldersForWatch"].ElementAt(i).Value;
-                if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
+                if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
                 {
                     list_folders_for_watch.Add(folder);
                     // Определить аудит указанного каталога:
@@ -1497,7 +1541,7 @@ namespace FileChangesWatcher
                 for (int i = 0; i <= e.Args.Length - 1; i++)
                 {
                     String folder = e.Args[i];
-                    if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && Directory.Exists(folder))
+                    if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
                     {
                         list_folders_for_watch.Add(folder);
                     }
@@ -1581,9 +1625,9 @@ namespace FileChangesWatcher
             // Прочитать логи от предыдущего сеанса и добавить их в контекстное меню:
             //string history_file_name = - всё таки у меня для этого файла есть глобальная переменная. TODO - проверить и удалить эту строку.
             getHistoryFileName();
-            if(File.Exists(history_file_name) == true)
+            if(LongFile.Exists(history_file_name) == true)
             {
-                string[] strings = File.ReadAllLines(history_file_name);
+                string[] strings = LongFile.ReadAllLines(history_file_name);
                 foreach(string str in strings)
                 {
                     if(str.Length > 0)
@@ -1596,7 +1640,7 @@ namespace FileChangesWatcher
                             string str_wType = prms[2];
                             string FullPath = prms[3];
                             // Проверить, что файл или каталог существует. Нельзя восстанавливать в контекстное меню несуществующие объекты.
-                            if( !( File.Exists(FullPath)==true || Directory.Exists(FullPath)==true) )
+                            if( !( LongFile.Exists(FullPath)==true || LongDirectory.Exists(FullPath)==true) )
                             {
                                 continue;
                             }
@@ -1609,12 +1653,14 @@ namespace FileChangesWatcher
                             if (str_ChangesType == "Renamed")
                             {
                                 string OldFullPath = prms[4];
-                                RenamedEventArgs _re = new RenamedEventArgs(wct, Path.GetDirectoryName(FullPath), Path.GetFileName(FullPath), Path.GetFileName(OldFullPath) );
+                                //RenamedEventArgs _re = new RenamedEventArgs(wct, Path.GetDirectoryName(FullPath), Path.GetFileName(FullPath), Path.GetFileName(OldFullPath) );
+                                RenamedEventArgs _re = new RenamedEventArgs(wct, LongDirectory.GetDirectoryName(FullPath), Path.GetFileName(FullPath), Path.GetFileName(OldFullPath) );
                                 ccrd = new MenuItemData_CCRD(_re, wType, dt);
                             }
                             else
                             {
-                                FileSystemEventArgs _e = new FileSystemEventArgs(wct, Path.GetDirectoryName(FullPath), Path.GetFileName(FullPath));
+                                //FileSystemEventArgs _e = new FileSystemEventArgs(wct, Path.GetDirectoryName(FullPath), Path.GetFileName(FullPath));
+                                FileSystemEventArgs _e = new FileSystemEventArgs(wct, LongDirectory.GetDirectoryName(FullPath), Path.GetFileName(FullPath));
                                 ccrd = new MenuItemData_CCRD(_e, wType, dt);
                             }
                             stackPaths.Add(ccrd);
@@ -1630,10 +1676,12 @@ namespace FileChangesWatcher
                 TrayPopupMessage popup = new TrayPopupMessage("Initial settings.\n" + init_text_message.ToString(), "Initial initialization", WatchingObjectType.File, App.NotifyIcon, null, TrayPopupMessage.ControlButtons.Clipboard);
                 popup.MouseDown += (sender, args) =>
                 {
-                    App.NotifyIcon.CustomBalloon.IsOpen = false;
+                    if (App.NotifyIcon.CustomBalloon != null) {
+                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                    }
                     App.ShowMessage("Initial settings.\n" + init_text_message.ToString());
                 };
-                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
             }
         }
 
@@ -2069,7 +2117,9 @@ namespace FileChangesWatcher
             Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
             {
                 // popup_test.Visibility = Visibility.Hidden;
-                _notifyIcon.CustomBalloon.IsOpen = false;
+                if (App.NotifyIcon.CustomBalloon != null) {
+                    _notifyIcon.CustomBalloon.IsOpen = false;
+                }
             });
             System.Timers.Timer temp = ((System.Timers.Timer)sender);
             temp.Stop();
@@ -2635,7 +2685,7 @@ namespace FileChangesWatcher
                     // Заодно и экономим, что при удалении не надо проверять тип объекта:
                     wType = WatchingObjectType.File;
                 } else {
-                    if (Directory.Exists(e.FullPath)) {
+                    if (LongDirectory.Exists(e.FullPath)) {
                         wType = WatchingObjectType.Folder;
                     }
                 }
@@ -2709,26 +2759,31 @@ namespace FileChangesWatcher
                                     if (e.ChangeType == WatcherChangeTypes.Deleted) {
                                         popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
-                            TrayPopupMessage.ControlButtons.Clipboard
+                                                TrayPopupMessage.ControlButtons.Clipboard
 #else
-                            TrayPopupMessage.ControlButtons.None
+                                                TrayPopupMessage.ControlButtons.None
 #endif
-                            );
+                                        );
                                         popup.MouseDown += ( sender, args ) => {
-                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                            if (App.NotifyIcon.CustomBalloon != null) {
+                                                App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                            }
                                         };
                                     } else {
                                         popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
 #if (!_Evgeniy)
-                            TrayPopupMessage.ControlButtons.Clipboard |
+                                        TrayPopupMessage.ControlButtons.Clipboard |
 #endif
-                            TrayPopupMessage.ControlButtons.Run);
+                                        TrayPopupMessage.ControlButtons.Run);
+
                                         popup.MouseDown += ( sender, args ) => {
-                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                            if (App.NotifyIcon.CustomBalloon != null) {
+                                                App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                            }
                                             App.gotoPathByWindowsExplorer(popup.path, popup.wType);
                                         };
                                     }
-                                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
                                     dt_prev_show_custom_ballon = DateTime.Now;
                                 }
                             } catch (Exception _ex) {
@@ -2780,7 +2835,7 @@ namespace FileChangesWatcher
                 } else {
                     wType = WatchingObjectType.File;
                     DateTime dt0 = DateTime.Now;
-                    if (Directory.Exists(e.FullPath)) {
+                    if (LongDirectory.Exists(e.FullPath)) {
                         wType = WatchingObjectType.Folder;
                     }
                     if (wType != WatchingObjectType.Folder) {
@@ -2791,16 +2846,17 @@ namespace FileChangesWatcher
                         return;
                     }
                 }
+
                 //if (check_path_is_in_watchable(e.FullPath, wType) == false)
                 if (check_path_is_in_watchable(e.FullPath, WatchingObjectType.Folder, _re_extensions) == false) {
                     return;
                 }
+
                 // Застолбить место в меню:
                 //MenuItemData menuItemData = new MenuItemData();
                 //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
                 _MenuItemData menuItemData = null;
                 if (Application.Current != null) {
-
                     Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
                     {
                         try {
@@ -2829,7 +2885,9 @@ namespace FileChangesWatcher
 #endif
                         );
                                     popup.MouseDown += ( sender, args ) => {
-                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        if (App.NotifyIcon.CustomBalloon != null) {
+                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        }
                                     };
                                 } else {
                                     popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
@@ -2840,11 +2898,13 @@ namespace FileChangesWatcher
 #endif
                         );
                                     popup.MouseDown += ( sender, args ) => {
-                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        if (App.NotifyIcon.CustomBalloon != null) {
+                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                        }
                                         App.gotoPathByWindowsExplorer(popup.path, popup.wType);
                                     };
                                 }
-                                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.Fade, 4000);
+                                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
                                 dt_prev_show_custom_ballon = DateTime.Now;
                             }
                         } catch (Exception _ex) {
@@ -2852,6 +2912,7 @@ namespace FileChangesWatcher
                         }
                     });
                 }
+
                 write_log(dt, e, wType);
                 reloadCustomMenuItems();
             } catch (Exception _ex) {
@@ -3123,7 +3184,8 @@ namespace FileChangesWatcher
                         {
                             RenamedEventArgs _ee = (RenamedEventArgs)ccrd.e;
                             string FullPath = _ee.FullPath;
-                            string OldFullPath = _ee.OldFullPath;
+                            //string OldFullPath = _ee.OldFullPath;
+                            string OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _ee, "oldFullPath");
                             record = String.Format("{0}\t{1}\t{2}\t{3}\t{4}\n", unix_time, wct.ToString(), ccrd.wType.ToString(), FullPath, OldFullPath);
                         }
                         else
@@ -3138,7 +3200,7 @@ namespace FileChangesWatcher
                     {
                     }
                 }
-                File.WriteAllText(file_name_last_files, record_all, Encoding.UTF8);
+                LongFile.WriteAllText(file_name_last_files, record_all, Encoding.UTF8);
 
                 //FileSystemEventArgs _e = new FileSystemEventArgs(WatcherChangeTypes.Changed, "", "");
             }
@@ -3240,7 +3302,7 @@ namespace FileChangesWatcher
         {
             try
             {
-                if (!File.Exists(dllPath))
+                if (!LongFile.Exists(dllPath))
                     return;
                 Assembly asm = Assembly.LoadFile(dllPath);
                 var reg = new RegistrationServices();
@@ -3275,7 +3337,7 @@ namespace FileChangesWatcher
         {
             try
             {
-                if (!File.Exists(dllPath))
+                if (!LongFile.Exists(dllPath))
                     return;
                 Assembly asm = Assembly.LoadFile(dllPath);
                 var reg = new RegistrationServices();

@@ -16,9 +16,9 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UpdateAssemblyVersion>True</UpdateAssemblyVersion>
     <UpdateAssemblyFileVersion>True</UpdateAssemblyFileVersion>
-    <UpdateAssemblyInfoVersion>False</UpdateAssemblyInfoVersion>
-    <AssemblyVersionSettings>None.None.IncrementOnDemand.Increment</AssemblyVersionSettings>
-    <AssemblyFileVersionSettings>None.None.IncrementOnDemand.Increment</AssemblyFileVersionSettings>
+    <UpdateAssemblyInfoVersion>True</UpdateAssemblyInfoVersion>
+    <AssemblyVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyVersionSettings>
+    <AssemblyFileVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyFileVersionSettings>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -35,6 +35,9 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
+    <ShouldCreateLogs>True</ShouldCreateLogs>
+    <AdvancedSettingsExpanded>True</AdvancedSettingsExpanded>
+    <AssemblyInfoVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyInfoVersionSettings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -237,6 +240,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug_Evgeniy|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -272,6 +276,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <DefineConstants>_Evgeniy</DefineConstants>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release_Evgeniy|x86'">
     <OutputPath>bin\x86\Release_Evgeniy\</OutputPath>
@@ -349,10 +354,13 @@
     <Compile Include="DialogListingDeletedFiles.xaml.cs">
       <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Long\LongDirectory.cs" />
+    <Compile Include="Long\LongFile.cs" />
     <Compile Include="MainStandalone.cs" />
     <Compile Include="MenuItemFileForTrayContextMenu.xaml.cs">
       <DependentUpon>MenuItemFileForTrayContextMenu.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Long\NativeMethods.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -364,6 +372,7 @@
     <Compile Include="TrayPopupMessage.xaml.cs">
       <DependentUpon>TrayPopupMessage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AppUtility.cs" />
     <Compile Include="WebBrowserDialog.xaml.cs">
       <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
     </Compile>
@@ -524,7 +533,16 @@
     </ItemGroup>
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>rem compact /c $(TargetPath)
+    <PostBuildEventDependsOn>
+         $(PostBuildEventDependsOn);
+         PostBuildMacros;
+    </PostBuildEventDependsOn>
+    <PostBuildEvent>if exist "C:\Program Files\7-Zip\7z.exe" (
+"C:\Program Files\7-Zip\7z.exe" a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath)
+cd /d $(ProjectDir)
+"C:\Program Files\7-Zip\7z.exe" a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*
+cd /d $(TargetDir)
+)
 explorer .
 exit 0</PostBuildEvent>
   </PropertyGroup>
@@ -535,4 +553,12 @@ exit 0</PostBuildEvent>
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="PostBuildMacros">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="Targets" />
+    </GetAssemblyIdentity>
+    <ItemGroup>
+      <VersionNumber Include="@(Targets->'%(Version)')" />
+    </ItemGroup>
+  </Target>
 </Project>

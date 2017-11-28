@@ -21,6 +21,8 @@ using Microsoft.Win32;
 using IniParser;
 using System.Reflection;
 using System.Windows.Interop;
+using System.Collections.Generic;
+using SharepointSync;
 
 //using Windows.UI.Notifications;
 //using NotificationsExtensions.Tiles; // NotificationsExtensions.Win10
@@ -142,7 +144,7 @@ namespace FileChangesWatcher
                         String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
                         iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
                         iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
-                        if (File.Exists(iniFilePath) == false)
+                        if (LongFile.Exists(iniFilePath) == false)
                         {
                             MessageBox.Show("Файл настроек не обнаружен.");
                         }else
@@ -389,6 +391,17 @@ namespace FileChangesWatcher
                         About window = new About();
                         window.Show();
                         App.ActivateWindow(new WindowInteropHelper(window).Handle);
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
+        public ICommand ResetIconsCache {
+            get {
+                return new DelegateCommand {
+                    CommandAction = () => {
+                        _MenuItemData.icons_map = new Dictionary<string, BitmapImage>();
                     },
                     CanExecuteFunc = () => true
                 };

@@ -66,7 +66,9 @@ namespace FileChangesWatcher
             Button btn_copy_clipboard = ((Button)this.FindName("btn_copy_clipboard"));
             btn_copy_clipboard.Click += (sender, args) =>
             {
-                tb.CustomBalloon.IsOpen = false;
+                if (tb.CustomBalloon != null) {
+                    tb.CustomBalloon.IsOpen = false;
+                }
                 App.copy_clipboard_with_popup(_path);
             };
             if ((_buttons & ControlButtons.Clipboard) == 0)
@@ -76,7 +78,9 @@ namespace FileChangesWatcher
             Button btn_execute_file = ((Button)this.FindName("btn_execute_file"));
             btn_execute_file.Click += (sender, args) =>
             {
-                tb.CustomBalloon.IsOpen = false;
+                if (tb.CustomBalloon != null) {
+                    tb.CustomBalloon.IsOpen = false;
+                }
                 Process.Start(_path);
             };
             if ((_buttons & ControlButtons.Run) == 0)
@@ -88,6 +92,7 @@ namespace FileChangesWatcher
             this.MouseEnter += (sender, args) =>
             {
                 tb.ResetBalloonCloseTimer();
+                this.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x04, 0x7A, 0x95) );
                 //this.Visibility = Visibility.Hidden;
                 if (temp.Enabled)
                 {
@@ -96,6 +101,7 @@ namespace FileChangesWatcher
             };
             this.MouseLeave += (sender, args) =>
             {
+                this.Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x00, 0xAB, 0xD1));
                 temp.Start();
             };
             /*

@@ -1,4 +1,5 @@
 ﻿using IniParser;
+using SharepointSync;
 using SharpShell.Attributes;
 using SharpShell.SharpContextMenu;
 using System;
@@ -95,7 +96,8 @@ namespace FileChangesWatcher
                     try
                     {
                         // Проверить о чём идёт речь - о каталоге или о файле:
-                        bool_path_is_file = !File.GetAttributes(path).HasFlag(FileAttributes.Directory);
+                        //bool_path_is_file = !File.GetAttributes(path).HasFlag(FileAttributes.Directory);
+                        bool_path_is_file = LongFile.Exists(path);
                     }
                     catch (Exception ex) when (ex is UnauthorizedAccessException || ex is FileNotFoundException)
                     {
