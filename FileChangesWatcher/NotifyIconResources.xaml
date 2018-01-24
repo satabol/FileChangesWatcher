@@ -57,7 +57,12 @@
             <MenuItem.Icon>
                 <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
             </MenuItem.Icon>
-            <MenuItem Header="Open Settings" Command="{Binding OpenIniFile}">
+            <MenuItem Header="Open Settings.ini (deprecated)" Command="{Binding OpenIniFile}">
+                <MenuItem.Icon>
+                    <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open Settings.js" Command="{Binding OpenSettingsFileJS}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/ini.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>

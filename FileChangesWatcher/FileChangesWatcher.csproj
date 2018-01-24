@@ -312,6 +312,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="SharpShell, Version=2.2.0.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\SharpShell.dll</HintPath>
       <Private>True</Private>
@@ -354,6 +357,7 @@
     <Compile Include="DialogListingDeletedFiles.xaml.cs">
       <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DLLImport.cs" />
     <Compile Include="Long\LongDirectory.cs" />
     <Compile Include="Long\LongFile.cs" />
     <Compile Include="MainStandalone.cs" />

@@ -35,6 +35,8 @@ using System.Windows.Controls.Primitives;
 using System.Timers;
 using System.Resources;
 using SharepointSync;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 //using NotificationsExtensions.Tiles;
 
@@ -651,7 +653,7 @@ namespace FileChangesWatcher
             DialogListingDeletedFiles window = new DialogListingDeletedFiles();
             window.txtListFiles.Text = text;
             window.Show();
-            ActivateWindow(new WindowInteropHelper(window).Handle);
+            DLLImport.ActivateWindow(new WindowInteropHelper(window).Handle);
         }
 
         // Пользовательская комманда открытия диалога стёртых объектов:
@@ -778,7 +780,7 @@ namespace FileChangesWatcher
                         */
 
                         // Максимальное количество файлов в списке должно быть не больше указанного максимального значения:
-                        while (stackPaths.Count > log_contextmenu_size) {
+                        while (stackPaths.Count > Settings.log_contextmenu_size) {
                             // Удалить самый старый элемент из списка путей и из меню
                             //_MenuItemData first_menuItemData = stackPaths.OrderBy(d => d.index).First();
                             _MenuItemData first_menuItemData = stackPaths.OrderBy(d => d.date_time).First();
@@ -932,12 +934,17 @@ namespace FileChangesWatcher
             initApplication(e);
         }
 
-        public static String getIniFilePath()
+        /// <summary>
+        /// Получить путь к файлу настроек программы, который лежит в том же каталоге, где и программа.
+        /// </summary>
+        /// <param name="ext"></param>
+        /// <returns></returns>
+        public static String getSettingsFilePath(string ext)
         {
             String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
             string exe_file = typeof(FileChangesWatcher.App).Assembly.Location; // http://stackoverflow.com/questions/4764680/how-to-get-the-location-of-the-dll-currently-executing
             //iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-            iniFilePath = System.IO.Path.GetDirectoryName(exe_file) + "\\" + System.IO.Path.GetFileNameWithoutExtension(exe_file) + ".ini";
+            iniFilePath = System.IO.Path.GetDirectoryName(exe_file) + "\\" + System.IO.Path.GetFileNameWithoutExtension(exe_file) + ext;
             return iniFilePath;
         }
 
@@ -970,7 +977,7 @@ namespace FileChangesWatcher
             string year = n.Year.ToString();
             string month = (n.Month < 10 ? "0" : "") + n.Month.ToString();
             string day = (n.Day< 10 ? "0" : "") + n.Day.ToString();
-            string str_path = string_log_path + "\\" + string_log_file_prefix + ""+year+"."+month+"."+day+".log";
+            string str_path = Settings.string_log_path + "\\" + Settings.string_log_file_prefix + ""+year+"."+month+"."+day+".log";
             return str_path;
         }
 
@@ -1083,7 +1090,7 @@ namespace FileChangesWatcher
         public static void write_log(DateTime dt, FileSystemEventArgs _e, WatchingObjectType wType)
         {
             lock (lock_write_log) {
-                if (bool_log == false) {
+                if (Settings.bool_log == false) {
                     return;
                 }
 
@@ -1240,13 +1247,13 @@ namespace FileChangesWatcher
 
                 // После установки автозапуска отметить это настройкой в конфигурации:
                 FileIniDataParser fileIniDataParser = new FileIniDataParser();
-                IniParser.Model.IniData data = new IniParser.Model.IniData();
-                String iniFilePath = App.getIniFilePath();
-                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
-                data.Sections["General"].RemoveKey("autostart_on_windows");
-                data.Sections["General"].AddKey("autostart_on_windows", "true");
+                IniParser.Model.IniData iniData = new IniParser.Model.IniData();
+                String iniFilePath = App.getSettingsFilePath(".ini");
+                iniData = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                iniData.Sections["General"].RemoveKey("autostart_on_windows");
+                iniData.Sections["General"].AddKey("autostart_on_windows", "true");
                 UTF8Encoding a = new UTF8Encoding();
-                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
+                fileIniDataParser.WriteFile(iniFilePath, iniData, Encoding.UTF8);
             }
             catch (Exception e)
             {
@@ -1265,7 +1272,7 @@ namespace FileChangesWatcher
                 // После установки автозапуска отметить это настройкой в конфигурации:
                 FileIniDataParser fileIniDataParser = new FileIniDataParser();
                 IniParser.Model.IniData data = new IniParser.Model.IniData();
-                String iniFilePath = App.getIniFilePath();
+                String iniFilePath = App.getSettingsFilePath(".ini");
                 data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                 data.Sections["General"].RemoveKey("autostart_on_windows");
                 data.Sections["General"].AddKey("autostart_on_windows", "false");
@@ -1304,69 +1311,129 @@ namespace FileChangesWatcher
 
             // Проверить существование ini-файла. Если его нет, то создать его:
             FileIniDataParser fileIniDataParser = new FileIniDataParser();
-            IniParser.Model.IniData data = new IniParser.Model.IniData();
-            String iniFilePath = getIniFilePath();
+            IniParser.Model.IniData iniData = new IniParser.Model.IniData();
+            String iniFilePath = getSettingsFilePath(".ini");
+            String jsonFilePath = getSettingsFilePath(".js");
+            JObject jsonData = new JObject();
 
             if (LongFile.Exists(iniFilePath) == false)
             {
-                data.Sections.AddSection("Comments");
-                data.Sections.AddSection("General");
-                data.Sections.AddSection("Extensions");
-                data.Sections.AddSection("UserExtensions");
-                data.Sections.AddSection("FoldersForWatch");
-                data.Sections.AddSection("FoldersForExceptions");
-                data.Sections.AddSection("FileNamesExceptions");
+                iniData.Sections.AddSection("Comments");
+                iniData.Sections.AddSection("General");
+                iniData.Sections.AddSection("Extensions");
+                iniData.Sections.AddSection("UserExtensions");
+                iniData.Sections.AddSection("FoldersForWatch");
+                iniData.Sections.AddSection("FoldersForExceptions");
+                iniData.Sections.AddSection("FileNamesExceptions");
 
-                data.Sections["Comments"].AddKey("All extensions in Extensions Section are union in one string. Can be RegEx.");
-                data.Sections["Comments"].AddKey("All FoldersForExceptions Section   used in function StartsWith. Not use RegEx.");
-                data.Sections["Comments"].AddKey("All FileNamesExceptions Section    used in StartsWith. Not use RegEx.");
-                data.Sections["Comments"].AddKey("All keys in sections have to be unique in their sections.");
+                jsonData["General"]                 = new JObject();
+                jsonData["Extensions"]              = new JArray();
+                jsonData["UserExtensions"]          = new JArray();
+                jsonData["FoldersForWatch"]         = new JArray();
+                jsonData["FoldersForExceptions"]    = new JArray();
+                jsonData["FileNamesExceptions"]     = new JArray();
+                jsonData["FoldersForWatch"]         = new JArray();
+                jsonData["FoldersForExceptions"]    = new JArray();
+
+                iniData.Sections["Comments"].AddKey("All extensions in Extensions Section are union in one string. Can be RegEx.");
+                iniData.Sections["Comments"].AddKey("All FoldersForExceptions Section   used in function StartsWith. Not use RegEx.");
+                iniData.Sections["Comments"].AddKey("All FileNamesExceptions Section    used in StartsWith. Not use RegEx.");
+                iniData.Sections["Comments"].AddKey("All keys in sections have to be unique in their sections.");
                 // Пример записи комментария вместе со значением. Отдельно от значения в этом компоненте комментарии не пишутся
                 //data.Sections["Comments"].AddKey("key01", "disabled ; Отключить параметр."); 
 
 
                 // Количество файлов, видимое в меню:
-                data.Sections["General"].AddKey("log_contextmenu_size", "10");
+                iniData.Sections["General"].AddKey("log_contextmenu_size", "10");
+                jsonData["General"]["log_contextmenu_size"] = 10;
                 // Отображать уведомления (всплывающие балоны):
-                data.Sections["General"].AddKey("display_notifications", "true"); //Отображать уведомления disabled - по-умолчанию ; disabled/enabled ");
+                iniData.Sections["General"].AddKey("display_notifications", "true"); //Отображать уведомления disabled - по-умолчанию ; disabled/enabled ");
+                jsonData["General"]["display_notifications"] = true;
                 // Активация логирования в файл:
-                data.Sections["General"].AddKey("log", "true"); // true/false ");
+                iniData.Sections["General"].AddKey("log", "true"); // true/false ");
+                jsonData["General"]["log"] = true;
                 // Путь файлов логирования:
-                data.Sections["General"].AddKey("log_path", "."); // Путь для записи логов ( . - текущий каталог приложения ). Логи будут вестись, только если параметр log_file = true");
+                iniData.Sections["General"].AddKey("log_path", "."); // Путь для записи логов ( . - текущий каталог приложения ). Логи будут вестись, только если параметр log_file = true");
+                jsonData["General"]["log_path"] = ".";
                 // Префикс файлов логирования. Если программа будет записывать файлы логов на общий сетевой каталог, то нужно, чтобы такие файлы не пересекались с файлами других компьюеров
-                data.Sections["General"].AddKey("log_file_prefix", ""); // Префикс файла логов (на случай если файлы будут выкладываться в общий каталог и чтобы они не перезатирали файлы от других компьютеров");
+                iniData.Sections["General"].AddKey("log_file_prefix", ""); // Префикс файла логов (на случай если файлы будут выкладываться в общий каталог и чтобы они не перезатирали файлы от других компьютеров");
+                jsonData["General"]["log_file_prefix"] = "";
 
-                // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки^
-                data.Sections["Extensions"].AddKey("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z");
-                data.Sections["Extensions"].AddKey("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw");
-                data.Sections["Extensions"].AddKey("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm");
-                data.Sections["Extensions"].AddKey("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|vsdm");
-                data.Sections["Extensions"].AddKey("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl");
-                data.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
-                data.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
-                data.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
-                data.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
-                data.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
-                data.Sections["UserExtensions"].AddKey("extensions01", ".json");
-                data.Sections["UserExtensions"].AddKey("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf");
-                //data.Sections["Extensions"].AddKey("", "");
-                // Список каталогов, за которыми надо следить:
-                data.Sections["FoldersForWatch"].AddKey("folder01", @"D:\");
-                data.Sections["FoldersForWatch"].AddKey("folder02", @"E:\Docs");
-                data.Sections["FoldersForWatch"].AddKey("folder03", @"F:\");
-                // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
-                data.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
-                data.Sections["FileNamesExceptions"].AddKey("file01", "~$");
+                {
+                    // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки^
+                    iniData.Sections["Extensions"].AddKey("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z");
+                    iniData.Sections["Extensions"].AddKey("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw");
+                    iniData.Sections["Extensions"].AddKey("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm");
+                    iniData.Sections["Extensions"].AddKey("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm");
+                    iniData.Sections["Extensions"].AddKey("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl");
+                    iniData.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
+                    iniData.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
+                    iniData.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
+                    iniData.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
+                    iniData.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
 
-                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
+                    JArray jextensions =  ((JArray)jsonData["Extensions"]);
+                    jextensions.Add(new JObject( new JProperty("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z")));
+                    jextensions.Add(new JObject( new JProperty("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw")));
+                    jextensions.Add(new JObject( new JProperty("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm")));
+                    jextensions.Add(new JObject( new JProperty("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm")));
+                    jextensions.Add(new JObject( new JProperty("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl")));
+                    jextensions.Add(new JObject( new JProperty("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp")));
+                    jextensions.Add(new JObject( new JProperty("extensions03", ".cs|.xaml|.config|.ico")));
+                    jextensions.Add(new JObject( new JProperty("extensions04", ".gitignore|.md")));
+                    jextensions.Add(new JObject( new JProperty("extensions05", ".msg|.ini")));
+                    jextensions.Add(".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
+                }
+
+                {
+                    iniData.Sections["UserExtensions"].AddKey("extensions01", ".json");
+                    iniData.Sections["UserExtensions"].AddKey("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf");
+
+                    JArray jUserExtensions =  ((JArray)jsonData["UserExtensions"]);
+                    jUserExtensions.Add(new JObject( new JProperty("extensions01", ".json")));
+                    jUserExtensions.Add(new JObject( new JProperty("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf")));
+                }
+
+                {
+                    //data.Sections["Extensions"].AddKey("", "");
+                    // Список каталогов, за которыми надо следить:
+                    iniData.Sections["FoldersForWatch"].AddKey("folder01", @"D:\");
+                    iniData.Sections["FoldersForWatch"].AddKey("folder02", @"E:\Docs");
+                    iniData.Sections["FoldersForWatch"].AddKey("folder03", @"F:\");
+
+                    JArray jFoldersForWatch = ((JArray)jsonData["FoldersForWatch"]);
+                    jFoldersForWatch.Add(new JObject( new JProperty("folder01", @"D:\")));
+                    jFoldersForWatch.Add(@"E:\Docs");
+                    jFoldersForWatch.Add(@"F:\");
+                }
+
+                {
+                    // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
+                    iniData.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
+
+                    JArray jFoldersForExceptions= ((JArray)jsonData["FoldersForExceptions"]);
+                    jFoldersForExceptions.Add(new JObject( new JProperty("folder01", "D:\\temp")));
+                }
+
+                {
+                    iniData.Sections["FileNamesExceptions"].AddKey("file01", "~$");
+
+                    JArray jFileNamesExceptions = ((JArray)jsonData["FileNamesExceptions"]);
+                    jFileNamesExceptions.Add("~$");
+                }
+
+
+                fileIniDataParser.WriteFile(iniFilePath, iniData, Encoding.UTF8);
+
+                File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(jsonData, Newtonsoft.Json.Formatting.Indented));
             }
             else
             {
-
                 _notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
                 try
                 {
-                    data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                    iniData = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                    jsonData = JObject.Parse(File.ReadAllText(jsonFilePath));
                 }
                 catch (IniParser.Exceptions.ParsingException ex)
                 {
@@ -1380,7 +1447,7 @@ namespace FileChangesWatcher
 
             // При первом запуске проверить, если в настройках нет флага, отменяющего автозагрузку,
             // то прописать автозапуск приложения в реестр:
-            if (data.Sections["General"].GetKeyData("autostart_on_windows") == null) {
+            if (iniData.Sections["General"].GetKeyData("autostart_on_windows") == null || jsonData["General"]["autostart_on_windows"]==null) {
                 if( MessageBox.Show("Set autostart with windows?\n\n(if you say no then you can do this in context menu later)", "FileChangesWatcher", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     setAutostart();
@@ -1389,28 +1456,29 @@ namespace FileChangesWatcher
                 {
                     resetAutostart();
                 }
-            }else if("true".Equals(data.Sections["General"].GetKeyData("autostart_on_windows").Value))
-            {
+            }else 
+            if("true".Equals(iniData.Sections["General"].GetKeyData("autostart_on_windows").Value) || ((bool)jsonData["General"]["autostart_on_windows"])==true){
                 setAutostart();
-            }else
-            {
+            }else{
                 resetAutostart();
             }
 
             try
             {
                 // Определить количество пунктов подменю:
-                log_contextmenu_size = Convert.ToInt32(data.Sections["General"].GetKeyData("log_contextmenu_size").Value);
+                Settings.log_contextmenu_size = Convert.ToInt32(iniData.Sections["General"].GetKeyData("log_contextmenu_size").Value);
+                Settings.log_contextmenu_size = Convert.ToInt32(jsonData["General"]["log_contextmenu_size"]);
             }
-            catch (OverflowException)
+            catch (Exception _ex)
             {
-                Console.WriteLine("Ошибка преобразования значения log_contextmenu_size в число");
+                Console.WriteLine("Ошибка преобразования значения log_contextmenu_size в число. \n"+_ex.ToString() );
             }
 
             try
             {
                 // Активировать ли систему логирования (true/false):
-                bool_display_notifications = Convert.ToBoolean(data.Sections["General"].GetKeyData("display_notifications").Value);
+                Settings.bool_display_notifications = Convert.ToBoolean(iniData.Sections["General"].GetKeyData("display_notifications").Value);
+                Settings.bool_display_notifications = Convert.ToBoolean(jsonData["General"]["display_notifications"]);
             }
             catch (Exception ex)
             {
@@ -1421,7 +1489,8 @@ namespace FileChangesWatcher
             try
             {
                 // Активировать ли систему логирования (true/false):
-                bool_log = Convert.ToBoolean(data.Sections["General"].GetKeyData("log").Value);
+                Settings.bool_log = Convert.ToBoolean(iniData.Sections["General"].GetKeyData("log").Value);
+                Settings.bool_log = Convert.ToBoolean(jsonData["General"]["log"]);
             }
             catch (Exception ex)
             {
@@ -1431,21 +1500,22 @@ namespace FileChangesWatcher
             try
             {
                 // Каталог, куда складывать файлы логов:
-                string_log_path = data.Sections["General"].GetKeyData("log_path").Value;
-                if( string_log_path==".")
+                Settings.string_log_path = iniData.Sections["General"].GetKeyData("log_path").Value;
+                Settings.string_log_path = Convert.ToString(jsonData["General"]["log_path"]);
+                if (Settings.string_log_path ==".")
                 {
-                    string_log_path = getExeFilePath();
-                    string_log_path = Path.GetDirectoryName(string_log_path);
+                    Settings.string_log_path = getExeFilePath();
+                    Settings.string_log_path = Path.GetDirectoryName(Settings.string_log_path);
                 }
                 else
                 {
-                    if( LongDirectory.Exists( string_log_path ))
+                    if( LongDirectory.Exists(Settings.string_log_path ))
                     {
                     }
                     else
                     {
-                        string_log_path = getExeFilePath();
-                        string_log_path = Path.GetDirectoryName(string_log_path);
+                        Settings.string_log_path = getExeFilePath();
+                        Settings.string_log_path = Path.GetDirectoryName(Settings.string_log_path);
                     }
                 }
             }
@@ -1457,125 +1527,94 @@ namespace FileChangesWatcher
             try
             {
                 // Префикс файла логов (чтобы не петать с файлами других программ, которые могут писать в общую сетевую папку):
-                string_log_file_prefix = data.Sections["General"].GetKeyData("log_file_prefix").Value;
+                Settings.string_log_file_prefix = iniData.Sections["General"].GetKeyData("log_file_prefix").Value;
+                Settings.string_log_file_prefix = Convert.ToString(jsonData["General"]["log_file_prefix"]);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Ошибка чтения параметра log_file_prefix: " + ex.Message);
             }
 
-            _re_extensions = getExtensionsRegEx(data, new string[] { "Extensions", "UserExtensions" });
-            _re_user_extensions = getExtensionsRegEx(data, new string[] { "UserExtensions" });
+            //_re_extensions = getExtensionsRegEx(iniData, new string[] { "Extensions", "UserExtensions" });
+            //_re_user_extensions = getExtensionsRegEx(iniData, new string[] { "UserExtensions" });
+            _re_extensions = getExtensionsRegEx(jsonData, new string[] { "Extensions", "UserExtensions" });
+            _re_user_extensions = getExtensionsRegEx(jsonData, new string[] { "UserExtensions" });
 
-            // Определить список каталогов, за которыми надо наблюдать и проверить состояние аудита для этих каталогов:
+
+            // Определить список каталогов, за которыми надо наблюдать:
             ///*
-            list_folders_for_watch = new List<String>();
-            for (int i = 0; i <= data.Sections["FoldersForWatch"].Count - 1; i++)
+            Settings.list_folders_for_watch = new List<String>();
+            //for (int i = 0; i <= iniData.Sections["FoldersForWatch"].Count - 1; i++)
+            //{
+            //    String folder = iniData.Sections["FoldersForWatch"].ElementAt(i).Value;
+            //    if (folder.Length > 0 && Settings.list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
+            //    {
+            //        Settings.list_folders_for_watch.Add(folder);
+            //    }
+            //    else
+            //    {
+            //        init_text_message.Append("\nThere is no folder \"" + folder + "\" for watching. Skipped.");
+            //    }
+            //}
             {
-                String folder = data.Sections["FoldersForWatch"].ElementAt(i).Value;
-                if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
-                {
-                    list_folders_for_watch.Add(folder);
-                    // Определить аудит указанного каталога:
-                    // НЕ УДАЛЯТЬ!!!
-
-                    //FileSecurity fSecurity = File.GetAccessControl(folder, AccessControlSections.Audit);
-                    //AuthorizationRuleCollection col_audit = fSecurity.GetAuditRules(true, true, typeof(SecurityIdentifier) );
-                    //init_text_message.Append("\nCheck Audit Rules for watching folder \""+folder+"\":");
-                    //bool is_Audit_Delete = false;
-                    //bool is_Audit_DeleteSubdirectoriesAndFiles = false;
-                    //foreach (FileSystemAuditRule ace in col_audit)
-                    //{
-                    //    // Проверить, что аудит каталога имеет установку на логирование событий DELETE и DeleteSubDirectoriesAndFiles:
-                    //    // https://msdn.microsoft.com/ru-ru/library/system.security.accesscontrol.filesystemrights(v=vs.110).aspx
-                    //    if ( (ace.FileSystemRights & FileSystemRights.Delete)==FileSystemRights.Delete )
-                    //    {
-                    //        is_Audit_Delete = true;
-                    //        init_text_message.Append("\n     Audit Delete is on. GOOD." );
-                    //    }
-                    //    if ((ace.FileSystemRights & FileSystemRights.DeleteSubdirectoriesAndFiles) == FileSystemRights.DeleteSubdirectoriesAndFiles)
-                    //    {
-                    //        is_Audit_DeleteSubdirectoriesAndFiles = true;
-                    //        init_text_message.Append("\n     Audit DeleteSubdirectoriesAndFiles is on. GOOD.");
-                    //    }
-                    //}
-                    //if( is_Audit_Delete==false)
-                    //{
-                    //    init_text_message.Append("\n     Audit Delete is off. BAD. Turn it ON.");
-                    //}
-                    //if (is_Audit_DeleteSubdirectoriesAndFiles == false)
-                    //{
-                    //    init_text_message.Append("\n     Audit DeleteSubdirectoriesAndFiles is off. BAD. Turn it ON.");
-                    //}
-                    ///*
-                    //if( is_Audit_Delete==false || is_Audit_DeleteSubdirectoriesAndFiles == false)
-                    //{
-                    //// Вывести окно "свойства" для каталога:
-                    //    ShowFileProperties(folder);
-                    //}
-                    ////*/
-
-                    //// Определить имя диска и его физическое имя:
-                    //string drive_name = Path.GetPathRoot(folder);
-                    //if( !(drive_name==null || drive_name.Length == 0) )
-                    //{
-                    //    drive_name = drive_name.Split('\\')[0];
-                    //    if(dict_drive_phisical.ContainsKey(drive_name) == false)
-                    //    {
-                    //        List<string> list_phisical_drive_name = GetPhysicalDriveList(drive_name, @"\Device\HarddiskVolume");
-                    //        if(list_phisical_drive_name != null)
-                    //        {
-                    //            string phisical_drive_name = list_phisical_drive_name.First();
-                    //            dict_drive_phisical.Add(drive_name, phisical_drive_name);
-                    //        }
-                    //    }
-                    //}
-                }
-                else
-                {
-                    init_text_message.Append("\nThere is no folder \"" + folder + "\" for watching. Skipped.");
-                }
+                JArray jFoldersForWatch = (JArray)jsonData["FoldersForWatch"];
+                Settings.list_folders_for_watch = getListOfInnerValues(jsonData["FoldersForWatch"]);
             }
+
             if (e != null)
             {
                 for (int i = 0; i <= e.Args.Length - 1; i++)
                 {
                     String folder = e.Args[i];
-                    if (folder.Length > 0 && list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
+                    if (folder.Length > 0 && Settings.list_folders_for_watch.Contains(folder) == false && LongDirectory.Exists(folder))
                     {
-                        list_folders_for_watch.Add(folder);
+                        Settings.list_folders_for_watch.Add(folder);
                     }
                 }
             }
 
-            // Список каталогов с исключениями:
-            List<string> _arr_folders_for_exceptions = new List<String>();
-            for (int i = 0; i <= data.Sections["FoldersForExceptions"].Count - 1; i++)
             {
-                String folder = data.Sections["FoldersForExceptions"].ElementAt(i).Value;
-                if (folder.Length > 0)
-                {
-                    _arr_folders_for_exceptions.Add(folder);
+                List<string> folders_for_remove = new List<string>();
+                foreach (string folder in Settings.list_folders_for_watch) {
+                    if ((folder.Length > 0 && LongDirectory.Exists(folder)) == false) {
+                        folders_for_remove.Add(folder);
+                    }
+                }
+                foreach (string folder in folders_for_remove) {
+                    Settings.list_folders_for_watch.Remove(folder);
                 }
             }
-            arr_folders_for_exceptions = _arr_folders_for_exceptions;
+
+            // Список каталогов с исключениями:
+            //List<string> _arr_folders_for_exceptions = new List<String>();
+            //for (int i = 0; i <= iniData.Sections["FoldersForExceptions"].Count - 1; i++)
+            //{
+            //    String folder = iniData.Sections["FoldersForExceptions"].ElementAt(i).Value;
+            //    if (folder.Length > 0)
+            //    {
+            //        _arr_folders_for_exceptions.Add(folder);
+            //    }
+            //}
+            //Settings.arr_folders_for_exceptions = _arr_folders_for_exceptions;
+            Settings.arr_folders_for_exceptions = getListOfInnerValues(jsonData["FoldersForExceptions"]);
 
             // Список файлов с исключениями:
-            List<string> _arr_files_for_exceptions = new List<String>();
-            for (int i = 0; i <= data.Sections["FileNamesExceptions"].Count - 1; i++)
-            {
-                String folder = data.Sections["FileNamesExceptions"].ElementAt(i).Value;
-                if (folder.Length > 0)
-                {
-                    _arr_files_for_exceptions.Add(folder);
-                }
-            }
-            arr_files_for_exceptions = _arr_files_for_exceptions;
+            //List<string> _arr_files_for_exceptions = new List<String>();
+            //for (int i = 0; i <= iniData.Sections["FileNamesExceptions"].Count - 1; i++)
+            //{
+            //    String folder = iniData.Sections["FileNamesExceptions"].ElementAt(i).Value;
+            //    if (folder.Length > 0)
+            //    {
+            //        _arr_files_for_exceptions.Add(folder);
+            //    }
+            //}
+            //Settings.arr_files_for_exceptions = _arr_files_for_exceptions;
+            Settings.arr_files_for_exceptions = getListOfInnerValues(jsonData["FileNamesExceptions"]);
 
-            if (list_folders_for_watch.Count >= 1)
+            if (Settings.list_folders_for_watch.Count >= 1)
             {
                 init_text_message.Append("\n");
-                init_text_message.Append( setWatcherForFolderAndSubFolders(list_folders_for_watch.ToArray()) );
+                init_text_message.Append( setWatcherForFolderAndSubFolders(Settings.list_folders_for_watch.ToArray()) );
             }
             else
             {
@@ -1671,7 +1710,7 @@ namespace FileChangesWatcher
 
             appendLogToDictionary("Initial settings.\n"+init_text_message.ToString(), BalloonIcon.Info);
 
-            if (bool_display_notifications == true)
+            if (Settings.bool_display_notifications == true)
             {
                 TrayPopupMessage popup = new TrayPopupMessage("Initial settings.\n" + init_text_message.ToString(), "Initial initialization", WatchingObjectType.File, App.NotifyIcon, null, TrayPopupMessage.ControlButtons.Clipboard);
                 popup.MouseDown += (sender, args) =>
@@ -1709,6 +1748,68 @@ namespace FileChangesWatcher
             _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
             
             return new Regex(_extensions, RegexOptions.IgnoreCase);
+        }
+
+        public static Regex getExtensionsRegEx(JObject data, string[] sections) {
+            List<string> arr_extensions_for_filter = new List<String>();
+            String _extensions = "";
+            Regex re = new Regex("\\.");
+            foreach (string section in sections) {
+                if (data[section] != null) {
+                    List<string> list = getListOfInnerValues(data[section]);
+
+                    foreach(string folder in list){ 
+                        if (folder.Length > 0) {
+                            if (_extensions.Length > 0) {
+                                _extensions += "|";
+                            }
+                            _extensions += re.Replace(folder, "\\.");
+                        }
+                    }
+                }
+            }
+            //_extensions = @".*(" + _extensions + ")$";
+            _extensions = @"$(?<=(" + _extensions + "))";  // Крутое решение по ускорению проверки расширений: http://stackoverflow.com/questions/2081555/testing-for-endswith-efficiently-with-a-regex?answertab=votes#tab-top
+            _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
+
+            return new Regex(_extensions, RegexOptions.IgnoreCase);
+        }
+
+        /// <summary>
+        /// Получить список строк от вложенных значений потомков или от самих значений:
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="sections"></param>
+        /// <returns></returns>
+        public static List<string> getListOfInnerValues(JToken data) {
+            List<string> values = new List<String>();
+            if (data.Type == JTokenType.String) {
+                values.Add((string)data);
+            }else if (data.Type == JTokenType.Object) {
+                foreach (JProperty prop in ((JObject)data).Properties()) {
+                    if (prop.Value.Type == JTokenType.String) {
+                        string value = (string)prop.Value;
+                        values.Add(value);
+                    }else if (prop.Value.Type == JTokenType.Object) {
+                        List<string> list = getListOfInnerValues( (JObject)prop.Value );
+                        values.AddRange(list);
+                    }
+                }
+            }else if (data.Type == JTokenType.Array) {
+                JArray arr = (JArray)data;
+                for(int i=0; i<=arr.Count-1; i++) {
+                    JToken prop = arr[i];
+                    if (prop.Type == JTokenType.String) {
+                        string value = (string)prop;
+                        values.Add(value);
+                    }
+                    else if (prop.Type == JTokenType.Object) {
+                        List<string> list = getListOfInnerValues( prop );
+                        values.AddRange(list);
+                    }
+                }
+            }
+            return values;
         }
 
         static List<FileSystemWatcher> list_watcher = new List<FileSystemWatcher>();
@@ -1810,8 +1911,6 @@ namespace FileChangesWatcher
 
         // Соответствие между именем диска и его физическим именем:
         static Dictionary<string, string> dict_drive_phisical = new Dictionary<string, string>();
-        // Список каталогов, за которыми наблюдает программа:
-        static List<string> list_folders_for_watch = null;
 
         //static Dictionary<String, BitmapImage> icons_map = new Dictionary<string, BitmapImage>();
 
@@ -1825,22 +1924,30 @@ namespace FileChangesWatcher
             }
         }
 
-        // Список каталогов, которые надо исключить из вывода:
-        static List<String> arr_folders_for_exceptions = null;
-        static List<String> arr_files_for_exceptions = null;
-        // Количество файлов, которые видны в контекстном меню (читается из файла конфигурации):
-        static int log_contextmenu_size = 5;
-        // Вывод на экран уведомления о файловых операциях (всплывающие балоны) (читается из файла конфигурации):
-        static bool bool_display_notifications = true;
-        // Активировать ли логирование файловых операций в файл логов (читается из файла конфигурации):
-        static bool bool_log = false;
-        // Путь файлов логирования. (Точка) - текущий каталог приложения (по-умолчанию). (Читается из файла конфигурации).
-        static string string_log_path = ".";
-        // Префикс файлов логирования. Пустой по-умолчанию. (Читается из файла конфигурации)
-        static string string_log_file_prefix = "";
+        public class Settings {
+            // Список каталогов, которые надо исключить из вывода:
+            public static List<String> arr_folders_for_exceptions = null;
+            public static List<String> arr_files_for_exceptions = null;
+            // Количество файлов, которые видны в контекстном меню (читается из файла конфигурации):
+            public static int log_contextmenu_size = 5;
+            // Вывод на экран уведомления о файловых операциях (всплывающие балоны) (читается из файла конфигурации):
+            public static bool bool_display_notifications = true;
+            // Активировать ли логирование файловых операций в файл логов (читается из файла конфигурации):
+            public static bool bool_log = false;
+            // Путь файлов логирования. (Точка) - текущий каталог приложения (по-умолчанию). (Читается из файла конфигурации).
+            public static string string_log_path = ".";
+            // Префикс файлов логирования. Пустой по-умолчанию. (Читается из файла конфигурации)
+            public static string string_log_file_prefix = "";
+
+            // Список каталогов, за которыми наблюдает программа:
+            public static List<string> list_folders_for_watch = null;
+
+        }
+
 
         // Если _old_path!=null, то надо переименовать имеющиеся пути с _old_path на _path
         private static int menuitem_header_length = 30;
+        #region Legasy
         //private static void appendPathToDictionary(string _path, WatcherChangeTypes changedType, WatchingObjectType wType, MenuItemData menuItemData)
         //{
         //    String str = _path;
@@ -1850,7 +1957,7 @@ namespace FileChangesWatcher
 
         //        //if (changedType == WatcherChangeTypes.Deleted)
         //        //{
-                    
+
         //        //}
         //        //else // остальные случаи: WatcherChangeTypes.Changed, WatcherChangeTypes.Created, WatcherChangeTypes.Renamed
         //        {
@@ -2111,6 +2218,7 @@ namespace FileChangesWatcher
         //        }
         //    });
         //}
+        #endregion 
 
         public static void customballoon_close(object sender, ElapsedEventArgs e)
         {
@@ -2132,6 +2240,7 @@ namespace FileChangesWatcher
             reloadCustomMenuItems();
         }
 
+        #region Legasy
         //private static void appendLogToDictionary1(String logText, BalloonIcon _ballonIcon)
         //{
         //    Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
@@ -2183,289 +2292,289 @@ namespace FileChangesWatcher
             });
         }
         //*/
-
+        
         // Определить все события, которые в данный момент находятся в dict_path_time.
         // После определения необходимо стереть все элементы, которые были на момент входа в функцию.
         // Вернуть список событий, которые были получены в результате обработки очереди.
         // https://codewala.net/2013/10/04/reading-event-logs-efficiently-using-c/
 
-        static List<Dictionary<string, string>> getDeleteInfo(/*string _path*/)
-        {
-            List<Dictionary<string, string>> list_events = new List<Dictionary<string, string>>();
-            List<Dictionary<string, string>> event_4653 = new List<Dictionary<string, string>>();
-            List<Dictionary<string, string>> event_4660 = new List<Dictionary<string, string>>();
-            List<Dictionary<string, string>> event_4656 = new List<Dictionary<string, string>>();
-            // Удаление иногда бывает длительным и нужно дождаться, пока стек файлов "опустеет" (наполняется он снаружи этого цикла):
-            while (dict_path_time.Count > 0)
-            {
+        //static List<Dictionary<string, string>> getDeleteInfo(/*string _path*/)
+        //{
+        //    List<Dictionary<string, string>> list_events = new List<Dictionary<string, string>>();
+        //    List<Dictionary<string, string>> event_4653 = new List<Dictionary<string, string>>();
+        //    List<Dictionary<string, string>> event_4660 = new List<Dictionary<string, string>>();
+        //    List<Dictionary<string, string>> event_4656 = new List<Dictionary<string, string>>();
+        //    // Удаление иногда бывает длительным и нужно дождаться, пока стек файлов "опустеет" (наполняется он снаружи этого цикла):
+        //    while (dict_path_time.Count > 0)
+        //    {
 
-                //string result = "неизвестный удалил "+_path;
-                // Тут будут события, которые взяты из журнала событий (как только они там наступят)
-                List<Dictionary<string, string>> dict_event_path_object = new List<Dictionary<string, string>>();
-                try
-                {
-                    int j = 0;
-                    //string disk_name = Path.GetPathRoot(_path);
-                    //if (!(disk_name == null || disk_name.Length == 0))
-                    {
-                        //disk_name = disk_name.Split('\\')[0];
-                        int i = 0;
-                        EventRecord eventdetail = null;
-                        EventLogReader logReader = null; // new EventLogReader(eventsQuery);
-                        List<KeyValuePair<string, Path_ObjectType>> arr_partial_events = new List<KeyValuePair<string, Path_ObjectType>>();
-                        do
-                        {
-                            arr_partial_events = dict_path_time.ToList();
-                            //arr_partial_events.AddRange( dict_path_time.ToList() );
-                            DateTime curr_time = DateTime.Now;
-                            int delta_seconds = 60;
-                            DateTime min_time = DateTime.Now;
-                            // Сначала отсортировать события, которые уже не подпадают под рассмотрение, т.к. произошли достаточно давно.
-                            foreach (KeyValuePair<string, Path_ObjectType> path_time in dict_path_time)
-                            {
-                                // Если событие зарегистрировано в указанный интервал времени (delta_seconds) от момента входа в функцию,
-                                // то использовать эту запись в дальнейшем. Если не попадает, то удалить:
-                                if ((curr_time - path_time.Value.dateTime).TotalSeconds <= delta_seconds)
-                                {
-                                    if (min_time > path_time.Value.dateTime)
-                                    {
-                                        min_time = path_time.Value.dateTime;
-                                    }
-                                }
-                                else
-                                {
-                                    arr_partial_events.Remove(path_time);
-                                    if (arr_partial_events.Count == 0)
-                                    {
-                                        return dict_event_path_object;
-                                    }
-                                    //DateTime temp = new DateTime();
-                                    Path_ObjectType temp;
-                                    if (dict_path_time.TryRemove(path_time.Key, out temp) == false)
-                                    {
-                                        Console.Write("Удаление ключа " + path_time.Key + " не удалось");
-                                    }
-                                }
-                            }
-                            // Пройтись по всем и выкинуть те, у кого время старше 10 сек от текущего момента:
-                            /*
-                            string query = string.Format("*[System/EventID=4656 and System[TimeCreated[@SystemTime >= '{0}']]] and *[System[TimeCreated[@SystemTime <= '{1}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
-                                DateTime.Now.AddSeconds(-1).ToUniversalTime().ToString("o"),
-                                DateTime.Now.AddSeconds( 1).ToUniversalTime().ToString("o")
-                                );
-                                */
-                            // Запросить все события удаления файлов, которые входят в интервал min_time
-                            /* Пока не буду анализировать логи события 4660, т.к. на Windows Server 2012 R2 они не возникают.
-                             * Это не очень хорошо, что я так делаю, т.к. именно 4660 говорит о том, что объект был удалён, 
-                             * а 4656 всего лишь попытка выполнить удаления (но как правило удачная), но пока на это и расчёт.
-                            string query = string.Format("*[ System[EventID=4656 or EventID=4663 or EventID=4660] and System[TimeCreated[@SystemTime >= '{0}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
-                                min_time.AddSeconds(-1).ToUniversalTime().ToString("o")
-                                );
-                            */
-                            //string query = string.Format("*[ System[EventID=4656] and System[TimeCreated[@SystemTime >= '{0}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
-                            string query = string.Format("*[ System[EventID=4656] and System[TimeCreated[@SystemTime >= '{0}']] ]",
-                                min_time.AddSeconds(-1).ToUniversalTime().ToString("o")
-                                );
-                            EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, query);
-                            logReader = new EventLogReader(eventsQuery);
-                            eventdetail = logReader.ReadEvent();
-                            // Если записи из журнала прочитать не удалось, то читать их повторно, но не больше 10 раз (1 сек по 0.1)
-                            if (i++ > 10 || eventdetail != null)
-                            {
-                                break;
-                            }
-                            Thread.Sleep(100);
-                        } while (eventdetail == null);
+        //        //string result = "неизвестный удалил "+_path;
+        //        // Тут будут события, которые взяты из журнала событий (как только они там наступят)
+        //        List<Dictionary<string, string>> dict_event_path_object = new List<Dictionary<string, string>>();
+        //        try
+        //        {
+        //            int j = 0;
+        //            //string disk_name = Path.GetPathRoot(_path);
+        //            //if (!(disk_name == null || disk_name.Length == 0))
+        //            {
+        //                //disk_name = disk_name.Split('\\')[0];
+        //                int i = 0;
+        //                EventRecord eventdetail = null;
+        //                EventLogReader logReader = null; // new EventLogReader(eventsQuery);
+        //                List<KeyValuePair<string, Path_ObjectType>> arr_partial_events = new List<KeyValuePair<string, Path_ObjectType>>();
+        //                do
+        //                {
+        //                    arr_partial_events = dict_path_time.ToList();
+        //                    //arr_partial_events.AddRange( dict_path_time.ToList() );
+        //                    DateTime curr_time = DateTime.Now;
+        //                    int delta_seconds = 60;
+        //                    DateTime min_time = DateTime.Now;
+        //                    // Сначала отсортировать события, которые уже не подпадают под рассмотрение, т.к. произошли достаточно давно.
+        //                    foreach (KeyValuePair<string, Path_ObjectType> path_time in dict_path_time)
+        //                    {
+        //                        // Если событие зарегистрировано в указанный интервал времени (delta_seconds) от момента входа в функцию,
+        //                        // то использовать эту запись в дальнейшем. Если не попадает, то удалить:
+        //                        if ((curr_time - path_time.Value.dateTime).TotalSeconds <= delta_seconds)
+        //                        {
+        //                            if (min_time > path_time.Value.dateTime)
+        //                            {
+        //                                min_time = path_time.Value.dateTime;
+        //                            }
+        //                        }
+        //                        else
+        //                        {
+        //                            arr_partial_events.Remove(path_time);
+        //                            if (arr_partial_events.Count == 0)
+        //                            {
+        //                                return dict_event_path_object;
+        //                            }
+        //                            //DateTime temp = new DateTime();
+        //                            Path_ObjectType temp;
+        //                            if (dict_path_time.TryRemove(path_time.Key, out temp) == false)
+        //                            {
+        //                                Console.Write("Удаление ключа " + path_time.Key + " не удалось");
+        //                            }
+        //                        }
+        //                    }
+        //                    // Пройтись по всем и выкинуть те, у кого время старше 10 сек от текущего момента:
+        //                    /*
+        //                    string query = string.Format("*[System/EventID=4656 and System[TimeCreated[@SystemTime >= '{0}']]] and *[System[TimeCreated[@SystemTime <= '{1}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+        //                        DateTime.Now.AddSeconds(-1).ToUniversalTime().ToString("o"),
+        //                        DateTime.Now.AddSeconds( 1).ToUniversalTime().ToString("o")
+        //                        );
+        //                        */
+        //                    // Запросить все события удаления файлов, которые входят в интервал min_time
+        //                    /* Пока не буду анализировать логи события 4660, т.к. на Windows Server 2012 R2 они не возникают.
+        //                     * Это не очень хорошо, что я так делаю, т.к. именно 4660 говорит о том, что объект был удалён, 
+        //                     * а 4656 всего лишь попытка выполнить удаления (но как правило удачная), но пока на это и расчёт.
+        //                    string query = string.Format("*[ System[EventID=4656 or EventID=4663 or EventID=4660] and System[TimeCreated[@SystemTime >= '{0}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+        //                        min_time.AddSeconds(-1).ToUniversalTime().ToString("o")
+        //                        );
+        //                    */
+        //                    //string query = string.Format("*[ System[EventID=4656] and System[TimeCreated[@SystemTime >= '{0}']] and EventData[Data[@Name='AccessMask']='0x10000'] ]",
+        //                    string query = string.Format("*[ System[EventID=4656] and System[TimeCreated[@SystemTime >= '{0}']] ]",
+        //                        min_time.AddSeconds(-1).ToUniversalTime().ToString("o")
+        //                        );
+        //                    EventLogQuery eventsQuery = new EventLogQuery("Security", PathType.LogName, query);
+        //                    logReader = new EventLogReader(eventsQuery);
+        //                    eventdetail = logReader.ReadEvent();
+        //                    // Если записи из журнала прочитать не удалось, то читать их повторно, но не больше 10 раз (1 сек по 0.1)
+        //                    if (i++ > 10 || eventdetail != null)
+        //                    {
+        //                        break;
+        //                    }
+        //                    Thread.Sleep(100);
+        //                } while (eventdetail == null);
 
-                        for (; eventdetail != null; eventdetail = logReader.ReadEvent())
-                        {
-                            // https://techoctave.com/c7/posts/113-c-reading-xml-with-namespace
-                            XmlDocument doc = new XmlDocument();
-                            doc.LoadXml(eventdetail.ToXml());
-                            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
-                            nsmgr.AddNamespace("def", "http://schemas.microsoft.com/win/2004/08/events/event");
-                            XmlNode root = doc.DocumentElement;
+        //                for (; eventdetail != null; eventdetail = logReader.ReadEvent())
+        //                {
+        //                    // https://techoctave.com/c7/posts/113-c-reading-xml-with-namespace
+        //                    XmlDocument doc = new XmlDocument();
+        //                    doc.LoadXml(eventdetail.ToXml());
+        //                    XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+        //                    nsmgr.AddNamespace("def", "http://schemas.microsoft.com/win/2004/08/events/event");
+        //                    XmlNode root = doc.DocumentElement;
 
-                            Dictionary<string, string> dict_event_object = new Dictionary<string, string>();
+        //                    Dictionary<string, string> dict_event_object = new Dictionary<string, string>();
 
-                            XmlNode node_EventID = root["System"].SelectSingleNode("def:EventID", nsmgr);
-                            string str_EventID = node_EventID.InnerText;
-                            dict_event_object.Add("EventID", str_EventID);
+        //                    XmlNode node_EventID = root["System"].SelectSingleNode("def:EventID", nsmgr);
+        //                    string str_EventID = node_EventID.InnerText;
+        //                    dict_event_object.Add("EventID", str_EventID);
 
-                            switch (str_EventID)
-                            {
-                                // Не самый корректный способ определяющий удаление файла, но пока оставлю этот.
-                                // TODO: 4660 - реальное событие удаление, но бывает не во всех ОС. Надо разобраться в чём дело.
-                                case "4656":
-                                    break;
-                                default:
-                                    // чтобы не тратить время на остальные проверки переходить к следующему событию.
-                                    continue;
-                            }
+        //                    switch (str_EventID)
+        //                    {
+        //                        // Не самый корректный способ определяющий удаление файла, но пока оставлю этот.
+        //                        // TODO: 4660 - реальное событие удаление, но бывает не во всех ОС. Надо разобраться в чём дело.
+        //                        case "4656":
+        //                            break;
+        //                        default:
+        //                            // чтобы не тратить время на остальные проверки переходить к следующему событию.
+        //                            continue;
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_EventRecordID = root["System"].SelectSingleNode("def:EventRecordID", nsmgr);
-                                string str_EventRecordID = node_EventRecordID.InnerText;
-                                dict_event_object.Add("EventRecordID", str_EventRecordID);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_EventRecordID = root["System"].SelectSingleNode("def:EventRecordID", nsmgr);
+        //                        string str_EventRecordID = node_EventRecordID.InnerText;
+        //                        dict_event_object.Add("EventRecordID", str_EventRecordID);
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                // Строки настраиваемых форматов даты и времени: https://msdn.microsoft.com/ru-ru/library/8kb3ddd4%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
-                                // http://stackoverflow.com/questions/3075659/what-is-the-time-format-of-windows-event-log
-                                XmlNode node_TimeCreated_SystemTime = root["System"].SelectSingleNode("def:TimeCreated[@SystemTime]", nsmgr);
-                                string str_TimeCreated_SystemTime = node_TimeCreated_SystemTime.Attributes.GetNamedItem("SystemTime").InnerText;
-                                DateTime dateValue = DateTime.Parse(str_TimeCreated_SystemTime, null, DateTimeStyles.None);
-                                string str_TimeCreated = dateValue.ToString();
-                                dict_event_object.Add("TimeCreated", str_TimeCreated);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        // Строки настраиваемых форматов даты и времени: https://msdn.microsoft.com/ru-ru/library/8kb3ddd4%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
+        //                        // http://stackoverflow.com/questions/3075659/what-is-the-time-format-of-windows-event-log
+        //                        XmlNode node_TimeCreated_SystemTime = root["System"].SelectSingleNode("def:TimeCreated[@SystemTime]", nsmgr);
+        //                        string str_TimeCreated_SystemTime = node_TimeCreated_SystemTime.Attributes.GetNamedItem("SystemTime").InnerText;
+        //                        DateTime dateValue = DateTime.Parse(str_TimeCreated_SystemTime, null, DateTimeStyles.None);
+        //                        string str_TimeCreated = dateValue.ToString();
+        //                        dict_event_object.Add("TimeCreated", str_TimeCreated);
+        //                    }
 
-                            string str_ObjectType = "";
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_ObjectType = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectType']", nsmgr);
-                                str_ObjectType = node_ObjectType.InnerText;
-                                dict_event_object.Add("ObjectType", str_ObjectType);
-                            }
+        //                    string str_ObjectType = "";
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_ObjectType = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectType']", nsmgr);
+        //                        str_ObjectType = node_ObjectType.InnerText;
+        //                        dict_event_object.Add("ObjectType", str_ObjectType);
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_SubjectUserName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectUserName']", nsmgr);
-                                string str_SubjectUserName = node_SubjectUserName.InnerText;
-                                dict_event_object.Add("SubjectUserName", str_SubjectUserName);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_SubjectUserName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectUserName']", nsmgr);
+        //                        string str_SubjectUserName = node_SubjectUserName.InnerText;
+        //                        dict_event_object.Add("SubjectUserName", str_SubjectUserName);
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_SubjectDomainName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectDomainName']", nsmgr);
-                                string str_SubjectDomainName = node_SubjectDomainName.InnerText;
-                                dict_event_object.Add("SubjectDomainName", str_SubjectDomainName);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_SubjectDomainName = root["EventData"].SelectSingleNode("def:Data[@Name='SubjectDomainName']", nsmgr);
+        //                        string str_SubjectDomainName = node_SubjectDomainName.InnerText;
+        //                        dict_event_object.Add("SubjectDomainName", str_SubjectDomainName);
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_ProcessName = root["EventData"].SelectSingleNode("def:Data[@Name='ProcessName']", nsmgr);
-                                string str_ProcessName = node_ProcessName.InnerText;
-                                dict_event_object.Add("ProcessName", str_ProcessName);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_ProcessName = root["EventData"].SelectSingleNode("def:Data[@Name='ProcessName']", nsmgr);
+        //                        string str_ProcessName = node_ProcessName.InnerText;
+        //                        dict_event_object.Add("ProcessName", str_ProcessName);
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_HandleId = root["EventData"].SelectSingleNode("def:Data[@Name='HandleId']", nsmgr);
-                                string str_HandleId = node_HandleId.InnerText;
-                                dict_event_object.Add("HandleId", str_HandleId);
-                            }
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_HandleId = root["EventData"].SelectSingleNode("def:Data[@Name='HandleId']", nsmgr);
+        //                        string str_HandleId = node_HandleId.InnerText;
+        //                        dict_event_object.Add("HandleId", str_HandleId);
+        //                    }
 
-                            string str_AccessMask = "";
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_HandleId = root["EventData"].SelectSingleNode("def:Data[@Name='AccessMask']", nsmgr);
-                                str_AccessMask = node_HandleId.InnerText;
-                                dict_event_object.Add("AccessMask", str_AccessMask);
-                                int value = (int)new System.ComponentModel.Int32Converter().ConvertFromString(str_AccessMask);
-                                if( (value & 0x10000) != 0x10000)
-                                {
-                                    continue;
-                                }
-                            }
+        //                    string str_AccessMask = "";
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_HandleId = root["EventData"].SelectSingleNode("def:Data[@Name='AccessMask']", nsmgr);
+        //                        str_AccessMask = node_HandleId.InnerText;
+        //                        dict_event_object.Add("AccessMask", str_AccessMask);
+        //                        int value = (int)new System.ComponentModel.Int32Converter().ConvertFromString(str_AccessMask);
+        //                        if( (value & 0x10000) != 0x10000)
+        //                        {
+        //                            continue;
+        //                        }
+        //                    }
 
-                            if (str_EventID == "4656")
-                            {
-                                XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
-                                string str_ObjectName = node_ObjectName.InnerText;
-                                dict_event_object.Add("ObjectName", str_ObjectName);
+        //                    if (str_EventID == "4656")
+        //                    {
+        //                        XmlNode node_ObjectName = root["EventData"].SelectSingleNode("def:Data[@Name='ObjectName']", nsmgr);
+        //                        string str_ObjectName = node_ObjectName.InnerText;
+        //                        dict_event_object.Add("ObjectName", str_ObjectName);
 
-                                // Дружественное название имени объекта в списке зарегистрированных событий:
-                                string user_friendly_path = str_ObjectName;
-                                foreach (KeyValuePair<string, string> drive_phisical in dict_drive_phisical)
-                                {
-                                    string drive = drive_phisical.Key;
-                                    string phisical = drive_phisical.Value;
-                                    if (str_ObjectName.StartsWith(phisical) == true || str_ObjectName.StartsWith(drive) == true)
-                                    {
-                                        user_friendly_path = str_ObjectName.Replace(phisical, drive + "\\");
-                                        bool bool_is_path_watchable = false;
-                                        // https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4663
-                                        // Object Type: "File" for file or folder but can be other types of objects such as Key, SAM, SERVICE OBJECT, etc.
-                                        bool_is_path_watchable = check_path_is_in_watchable(user_friendly_path, WatchingObjectType.Folder, _re_extensions); // "Folder"); // После удаления нет возможности отличить каталог от файла. Поэтому буду проверять путь только на соответствие каталогу. str_ObjectType);
-                                        if (bool_is_path_watchable == true)
-                                        {
-                                            dict_event_object.Add("_user_friendly_path", user_friendly_path);
-                                            dict_event_path_object.Add(dict_event_object);
-                                        }
-                                        break;
-                                    }
-                                }
-                                // Т.к. событие обработано, то больше эта запись из журнала регистрации событий в программе не понадобиться. Удалить её совсем:
-                                //DateTime temp = new DateTime();
-                                Path_ObjectType temp;
-                                if (dict_path_time.TryRemove(user_friendly_path, out temp) == false)
-                                {
-                                    Console.Write("Удаление ключа " + user_friendly_path + " не удалось");
-                                }
-                            }
-                        }
-                        // Очистить главный стек событий стёртых файлов от обработанных событий:
-                        foreach (Dictionary<string, string> o in dict_event_path_object.ToArray() )
-                        {
-                            string _path = null;
-                            if( o.TryGetValue("_user_friendly_path", out _path) == true)
-                            {
-                                //DateTime temp = new DateTime();
-                                Path_ObjectType temp;
-                                if (dict_path_time.TryRemove(_path, out temp) == false)
-                                {
-                                    Console.Write("Удаление ключа " + _path + " не удалось");
-                                }
-                            }
-                        }
-                        // Read Event details
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error while reading the event logs");
-                    StackTrace st = new StackTrace(ex, true);
-                    StackFrame st_frame = st.GetFrame(st.FrameCount - 1);
-                    appendLogToDictionary("in: " + st_frame.GetFileName() + ":(" + st_frame.GetFileLineNumber() + "," + st_frame.GetFileColumnNumber() + ")" + "\n" + ex.Message, BalloonIcon.Error);
-                    //_notifyIcon.ShowBalloonTip("FileChangesWatcher", "in: " + st_frame.GetFileName() + ":(" + st_frame.GetFileLineNumber() + "," + st_frame.GetFileColumnNumber() + ")" + "\n" + ex.Message, BalloonIcon.Error);
-                }
-                List<Dictionary<string, string>> events = dict_event_path_object;
-                // Если на остальные объекты не нашлось событий в журнале безопасности windows, то сообщить о том, что информации на них нет.
-                // Это хотя бы уведомит, что файл удалён:
-                foreach(KeyValuePair<string, Path_ObjectType> o in dict_path_time.ToArray() )
-                {
-                    // TODO: проверить, что объект является наблюдаемым. Но пока это невозможно, т.к. неизвесен тип объекта (файл или каталог).
-                    string str_ObjectType = o.Value.wType == WatchingObjectType.File ? "File" : "Folder";
-                    bool bool_is_path_watchable = false;
-                    bool_is_path_watchable = check_path_is_in_watchable(o.Value.path.ToString(), WatchingObjectType.Folder, _re_extensions); // "Folder"); // После удаления нет возможности отличить каталог от файла. Поэтому буду проверять путь только на соответствие каталогу. str_ObjectType);
-                    if (bool_is_path_watchable==true)
-                    {
-                        Dictionary<string, string> file_event = new Dictionary<string, string>();
-                        file_event.Add("_user_friendly_path", o.Key);
-                        file_event.Add("TimeCreated", o.Value.dateTime.ToString());
-                        file_event.Add("ObjectType", "[unknown]");
-                        file_event.Add("SubjectUserName", "[unknown]");
-                        file_event.Add("SubjectDomainName", "[unknown]");
-                        file_event.Add("ProcessName", "[unknown]");
-                        file_event.Add("HandleId", "[unknown]");
-                        file_event.Add("ObjectName", o.Key);
-                        //file_data.Add("", "[unknown]");
-                        events.Add(file_event);
-                    }
-                    //DateTime temp=DateTime.Now;
-                    Path_ObjectType temp;
-                    dict_path_time.TryRemove(o.Key, out temp);
-                }
-                // Если нашлись хоть какие-то события удаления файлов, удовлетворяющие условиям наблюдения, то вывести добавить их в ответку:
-                if (events.Count > 0)
-                {
-                    list_events.AddRange(events);
-                }
-            }
-            return list_events;
-        }
+        //                        // Дружественное название имени объекта в списке зарегистрированных событий:
+        //                        string user_friendly_path = str_ObjectName;
+        //                        foreach (KeyValuePair<string, string> drive_phisical in dict_drive_phisical)
+        //                        {
+        //                            string drive = drive_phisical.Key;
+        //                            string phisical = drive_phisical.Value;
+        //                            if (str_ObjectName.StartsWith(phisical) == true || str_ObjectName.StartsWith(drive) == true)
+        //                            {
+        //                                user_friendly_path = str_ObjectName.Replace(phisical, drive + "\\");
+        //                                bool bool_is_path_watchable = false;
+        //                                // https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4663
+        //                                // Object Type: "File" for file or folder but can be other types of objects such as Key, SAM, SERVICE OBJECT, etc.
+        //                                bool_is_path_watchable = check_path_is_in_watchable(user_friendly_path, WatchingObjectType.Folder, _re_extensions); // "Folder"); // После удаления нет возможности отличить каталог от файла. Поэтому буду проверять путь только на соответствие каталогу. str_ObjectType);
+        //                                if (bool_is_path_watchable == true)
+        //                                {
+        //                                    dict_event_object.Add("_user_friendly_path", user_friendly_path);
+        //                                    dict_event_path_object.Add(dict_event_object);
+        //                                }
+        //                                break;
+        //                            }
+        //                        }
+        //                        // Т.к. событие обработано, то больше эта запись из журнала регистрации событий в программе не понадобиться. Удалить её совсем:
+        //                        //DateTime temp = new DateTime();
+        //                        Path_ObjectType temp;
+        //                        if (dict_path_time.TryRemove(user_friendly_path, out temp) == false)
+        //                        {
+        //                            Console.Write("Удаление ключа " + user_friendly_path + " не удалось");
+        //                        }
+        //                    }
+        //                }
+        //                // Очистить главный стек событий стёртых файлов от обработанных событий:
+        //                foreach (Dictionary<string, string> o in dict_event_path_object.ToArray() )
+        //                {
+        //                    string _path = null;
+        //                    if( o.TryGetValue("_user_friendly_path", out _path) == true)
+        //                    {
+        //                        //DateTime temp = new DateTime();
+        //                        Path_ObjectType temp;
+        //                        if (dict_path_time.TryRemove(_path, out temp) == false)
+        //                        {
+        //                            Console.Write("Удаление ключа " + _path + " не удалось");
+        //                        }
+        //                    }
+        //                }
+        //                // Read Event details
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine("Error while reading the event logs");
+        //            StackTrace st = new StackTrace(ex, true);
+        //            StackFrame st_frame = st.GetFrame(st.FrameCount - 1);
+        //            appendLogToDictionary("in: " + st_frame.GetFileName() + ":(" + st_frame.GetFileLineNumber() + "," + st_frame.GetFileColumnNumber() + ")" + "\n" + ex.Message, BalloonIcon.Error);
+        //            //_notifyIcon.ShowBalloonTip("FileChangesWatcher", "in: " + st_frame.GetFileName() + ":(" + st_frame.GetFileLineNumber() + "," + st_frame.GetFileColumnNumber() + ")" + "\n" + ex.Message, BalloonIcon.Error);
+        //        }
+        //        List<Dictionary<string, string>> events = dict_event_path_object;
+        //        // Если на остальные объекты не нашлось событий в журнале безопасности windows, то сообщить о том, что информации на них нет.
+        //        // Это хотя бы уведомит, что файл удалён:
+        //        foreach(KeyValuePair<string, Path_ObjectType> o in dict_path_time.ToArray() )
+        //        {
+        //            // TODO: проверить, что объект является наблюдаемым. Но пока это невозможно, т.к. неизвесен тип объекта (файл или каталог).
+        //            string str_ObjectType = o.Value.wType == WatchingObjectType.File ? "File" : "Folder";
+        //            bool bool_is_path_watchable = false;
+        //            bool_is_path_watchable = check_path_is_in_watchable(o.Value.path.ToString(), WatchingObjectType.Folder, _re_extensions); // "Folder"); // После удаления нет возможности отличить каталог от файла. Поэтому буду проверять путь только на соответствие каталогу. str_ObjectType);
+        //            if (bool_is_path_watchable==true)
+        //            {
+        //                Dictionary<string, string> file_event = new Dictionary<string, string>();
+        //                file_event.Add("_user_friendly_path", o.Key);
+        //                file_event.Add("TimeCreated", o.Value.dateTime.ToString());
+        //                file_event.Add("ObjectType", "[unknown]");
+        //                file_event.Add("SubjectUserName", "[unknown]");
+        //                file_event.Add("SubjectDomainName", "[unknown]");
+        //                file_event.Add("ProcessName", "[unknown]");
+        //                file_event.Add("HandleId", "[unknown]");
+        //                file_event.Add("ObjectName", o.Key);
+        //                //file_data.Add("", "[unknown]");
+        //                events.Add(file_event);
+        //            }
+        //            //DateTime temp=DateTime.Now;
+        //            Path_ObjectType temp;
+        //            dict_path_time.TryRemove(o.Key, out temp);
+        //        }
+        //        // Если нашлись хоть какие-то события удаления файлов, удовлетворяющие условиям наблюдения, то вывести добавить их в ответку:
+        //        if (events.Count > 0)
+        //        {
+        //            list_events.AddRange(events);
+        //        }
+        //    }
+        //    return list_events;
+        //}
 
         /*
         private static void renamePathFromDictionary(String _old_path, string _new_path, WatcherChangeTypes cType)
@@ -2494,6 +2603,7 @@ namespace FileChangesWatcher
             });
         }
         //*/
+        #endregion
 
         // Проверить, что путь удовлетворяет наблюдаемым правилам:
         public static bool check_path_is_in_watchable(string user_friendly_path, WatchingObjectType wType, Regex _extensions) // string str_ObjectType)
@@ -2521,7 +2631,7 @@ namespace FileChangesWatcher
             //}
 
             // Проверить, а не начинается ли путь с исключения:
-            foreach (string ex_path in arr_folders_for_exceptions)
+            foreach (string ex_path in Settings.arr_folders_for_exceptions)
             {
                 if (user_friendly_path.StartsWith(ex_path) == true &&
                     (
@@ -2537,7 +2647,7 @@ namespace FileChangesWatcher
 
             if (bool_is_path_watchable == true) {
                 // Проверить, а не начинается ли имя файла с исключения:
-                foreach (string ex_start_with in arr_files_for_exceptions) {
+                foreach (string ex_start_with in Settings.arr_files_for_exceptions) {
                     if (Path.GetFileNameWithoutExtension(user_friendly_path).StartsWith(ex_start_with) == true) {
                         bool_is_path_watchable = false;
                         break;
@@ -2564,6 +2674,7 @@ namespace FileChangesWatcher
             return _extensions.IsMatch(user_friendly_path);
         }
 
+        #region Legasy
         //private static void ShowPopupDeletePath(object sender, DoWorkEventArgs e)
         //{
         //    try
@@ -2655,6 +2766,7 @@ namespace FileChangesWatcher
         //        //_notifyIcon.ShowBalloonTip("FileChangesWatcher", "in: "+st_frame.GetFileName()+":(" + st_frame.GetFileLineNumber()+","+st_frame.GetFileColumnNumber()+")" + "\n" + ex.Message, BalloonIcon.Error);
         //    }
         //}
+        #endregion
 
         // http://stackoverflow.com/questions/12570324/c-sharp-run-a-thread-every-x-minutes-but-only-if-that-thread-is-not-running-alr
         private static BackgroundWorker worker = new BackgroundWorker(); // Класс BackgroundWorker позволяет выполнить операцию в отдельном, выделенном потоке. https://msdn.microsoft.com/ru-ru/library/system.componentmodel.backgroundworker%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
@@ -2705,6 +2817,7 @@ namespace FileChangesWatcher
 
                 // Отображать этот элемент в меню при условии, что он в списке расширений пользователя:
                 if (check_path_is_in_watchable(e.FullPath, wType, _re_user_extensions) == true) {
+                //if (check_path_is_in_watchable(e.FullPath, wType, _re_extensions) == true) {
                     // Застолбить место в меню:
                     _MenuItemData menuItemData = null;
                     if (Application.Current != null) {
@@ -2744,7 +2857,7 @@ namespace FileChangesWatcher
                                 }
                                 stackPaths.Add(menuItemData);
                             //if (last_menuItemData == null) // || last_menuItemData == menuItemData)
-                            if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
+                            if (Settings.bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
                                     TrayPopupMessage popup = null;
 
                                     BitmapImage bitmapImage = null;
@@ -2800,6 +2913,7 @@ namespace FileChangesWatcher
         }
         private static void OnCreated_file(object source, FileSystemEventArgs e)
         {
+            #region Legasy
             /*
             // Застолбить место в меню:
             //OnChanged(source, e, WatchingObjectType.File, menuItemData);
@@ -2807,20 +2921,25 @@ namespace FileChangesWatcher
             stackPaths.Add(menuItemData);
             reloadCustomMenuItems();
             */
+            #endregion
         }
 
         private static void OnRenamed_file(object source, RenamedEventArgs e)
         {
+            #region Legasy
             // Застолбить место в меню:
             //MenuItemData menuItemData = new MenuItemData();
             //OnRenamed(source, e, WatchingObjectType.File, menuItemData);
+            #endregion
         }
 
         private static void OnDeleted_file(object source, FileSystemEventArgs e)
         {
+            #region Legasy
             //// Застолбить место в меню:
             //MenuItemData menuItemData = new MenuItemData();
             //OnChanged(source, e, WatchingObjectType.File, menuItemData);
+            #endregion
         }
 
         private static void OnChanged_folder(object source, FileSystemEventArgs e)
@@ -2853,8 +2972,6 @@ namespace FileChangesWatcher
                 }
 
                 // Застолбить место в меню:
-                //MenuItemData menuItemData = new MenuItemData();
-                //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
                 _MenuItemData menuItemData = null;
                 if (Application.Current != null) {
                     Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
@@ -2874,7 +2991,7 @@ namespace FileChangesWatcher
                                 bi.EndInit();
                                 popup_image.Source = bi;
                             }
-                            if (bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
+                            if (Settings.bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
                                 TrayPopupMessage popup = null;
                                 if (e.ChangeType == WatcherChangeTypes.Deleted) {
                                     popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
@@ -2940,7 +3057,7 @@ namespace FileChangesWatcher
             //OnChanged(source, e, WatchingObjectType.Folder, menuItemData);
         }
 
-
+        #region Legasy
         //private static void OnChanged(object source, FileSystemEventArgs e, WatchingObjectType wType, MenuItemData menuItemData)
         //{
         //    //if(e.ChangeType == WatcherChangeTypes.Deleted)
@@ -3000,7 +3117,7 @@ namespace FileChangesWatcher
         //            return;
         //        }
         //    }
-            
+
         //    // Если изменяемым является только каталог, то не регистрировать это изменение.
         //    // Я заметил возникновение этого события, когда я меняю что-то непосредственно в подкаталоге 
         //    // (например, переименовываю его подфайл или подкаталога)
@@ -3104,17 +3221,18 @@ namespace FileChangesWatcher
 
         //    appendPathToDictionary(e.FullPath, e.ChangeType, wType, menuItemData);
         //}
+        #endregion
 
         public static bool IsObjectWachable(string path, WatchingObjectType wType)
         {
             bool bool_wachable = false;
             try {
                 // Проверить, а не начинается ли путь с исключения:
-                for (int i = 0; i <= arr_folders_for_exceptions.Count - 1; i++) {
-                    if (path.StartsWith(arr_folders_for_exceptions.ElementAt(i)) == true &&
+                for (int i = 0; i <= Settings.arr_folders_for_exceptions.Count - 1; i++) {
+                    if (path.StartsWith(Settings.arr_folders_for_exceptions.ElementAt(i)) == true &&
                             (
-                                path.Replace(arr_folders_for_exceptions.ElementAt(i), "") == "" ||
-                                path.Replace(arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
+                                path.Replace(Settings.arr_folders_for_exceptions.ElementAt(i), "") == "" ||
+                                path.Replace(Settings.arr_folders_for_exceptions.ElementAt(i), "")[0] == Path.DirectorySeparatorChar
                             )
                         ) {
                         return false;
@@ -3127,8 +3245,8 @@ namespace FileChangesWatcher
                         return false;
                     }
                     // Проверить, а не начинается ли имя файла с исключения:
-                    for (int i = 0; i <= arr_files_for_exceptions.Count - 1; i++) {
-                        if (Path.GetFileNameWithoutExtension(path).StartsWith(arr_files_for_exceptions.ElementAt(i)) == true) {
+                    for (int i = 0; i <= Settings.arr_files_for_exceptions.Count - 1; i++) {
+                        if (Path.GetFileNameWithoutExtension(path).StartsWith(Settings.arr_files_for_exceptions.ElementAt(i)) == true) {
                             return false;
                         }
                     }
@@ -3551,94 +3669,6 @@ namespace FileChangesWatcher
             devices = allDevices.Split('\0');
             // QueryDosDevices lists alot of devices, return only PhysicalDrives
             return devices.Where(device => device.StartsWith(start_with /*"PhysicalDrive"*/)).ToList <string> ();
-        }
-
-        // Этот набор нужен, чтобы вывести какое-либо окно на передний план.
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool IsIconic(IntPtr hWnd);
-        [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
-        [DllImport("user32.dll")]
-        private static extern int ShowWindow(IntPtr hWnd, uint Msg);
-
-        // http://stackoverflow.com/questions/10740346/setforegroundwindow-only-working-while-visual-studio-is-open?answertab=votes#tab-top
-        private const int ALT = 0xA4;
-        private const uint Restore = 9;
-        private const int EXTENDEDKEY = 0x1;
-        private const int KEYUP = 0x2;
-
-        // Сделать окно по указанному handle главным и в фокусе. Это нетривиальная задача. 
-        // Вот этот код работает в 99% случаев, но ооочень редко всё-таки иногда даёт сбой.
-        // Как добиться 100% пока не знаю.
-        public static void ActivateWindow(IntPtr mainWindowHandle)
-        {
-            //check if already has focus
-            if (mainWindowHandle == GetForegroundWindow()) return;
-
-            //check if window is minimized
-            if (IsIconic(mainWindowHandle))
-            {
-                ShowWindow(mainWindowHandle, Restore);
-            }
-
-            // Simulate a key press
-            keybd_event((byte)ALT, 0x45, EXTENDEDKEY | 0, 0);
-
-            //SetForegroundWindow(mainWindowHandle);
-
-            // Simulate a key release
-            keybd_event((byte)ALT, 0x45, EXTENDEDKEY | KEYUP, 0);
-
-            SetForegroundWindow(mainWindowHandle);
-        }
-
-        // Методы для открытия свойств каталога:
-        // http://stackoverflow.com/questions/1936682/how-do-i-display-a-files-properties-dialog-from-c?answertab=votes#tab-top
-        [DllImport("shell32.dll", CharSet = CharSet.Auto)]
-        static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct SHELLEXECUTEINFO
-        {
-            public int cbSize;
-            public uint fMask;
-            public IntPtr hwnd;
-            [MarshalAs(UnmanagedType.LPTStr)]
-            public string lpVerb;
-            [MarshalAs(UnmanagedType.LPTStr)]
-            public string lpFile;
-            [MarshalAs(UnmanagedType.LPTStr)]
-            public string lpParameters;
-            [MarshalAs(UnmanagedType.LPTStr)]
-            public string lpDirectory;
-            public int nShow;
-            public IntPtr hInstApp;
-            public IntPtr lpIDList;
-            [MarshalAs(UnmanagedType.LPTStr)]
-            public string lpClass;
-            public IntPtr hkeyClass;
-            public uint dwHotKey;
-            public IntPtr hIcon;
-            public IntPtr hProcess;
-        }
-
-        private const int SW_SHOW = 5;
-        private const uint SEE_MASK_INVOKEIDLIST = 12;
-        // Описание функции: https://msdn.microsoft.com/ru-ru/library/windows/desktop/bb759784(v=vs.85).aspx
-        public static bool ShowFileProperties(string Filename)
-        {
-            SHELLEXECUTEINFO info = new SHELLEXECUTEINFO();
-            info.cbSize = System.Runtime.InteropServices.Marshal.SizeOf(info);
-            info.lpVerb = "properties";  // edit, explore, find, open, print
-            info.lpFile = Filename;
-            info.nShow = SW_SHOW;
-            info.fMask = SEE_MASK_INVOKEIDLIST;
-            return ShellExecuteEx(ref info);
         }
     }
 

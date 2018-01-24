@@ -157,6 +157,25 @@ namespace FileChangesWatcher
             }
         }
 
+        public ICommand OpenSettingsFileJS {
+            get {
+                return new DelegateCommand {
+                    CommandAction = () => {
+                        String jsFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+                        jsFilePath = Process.GetCurrentProcess().MainModule.FileName;
+                        jsFilePath = System.IO.Path.GetDirectoryName(jsFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(jsFilePath) + ".js";
+                        if (LongFile.Exists(jsFilePath) == false) {
+                            MessageBox.Show("Файл настроек не обнаружен.");
+                        }
+                        else {
+                            Process.Start("explorer.exe", "/select,\""+jsFilePath+"\"");
+                        }
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
+
         public ICommand OpenHelp
         {
             get
@@ -390,7 +409,7 @@ namespace FileChangesWatcher
                     {
                         About window = new About();
                         window.Show();
-                        App.ActivateWindow(new WindowInteropHelper(window).Handle);
+                        DLLImport.ActivateWindow(new WindowInteropHelper(window).Handle);
                     },
                     CanExecuteFunc = () => true
                 };

@@ -105,7 +105,7 @@ namespace FileChangesWatcher
                         return;
                     }
 
-                    String iniFilePath = FileChangesWatcher.App.getIniFilePath();
+                    String iniFilePath = FileChangesWatcher.App.getSettingsFilePath(".ini");
 
                     FileIniDataParser fileIniDataParser = new FileIniDataParser();
                     IniParser.Model.IniData data; // = new IniParser.Model.IniData();
