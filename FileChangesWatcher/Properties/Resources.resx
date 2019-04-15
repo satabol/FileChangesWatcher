@@ -127,4 +127,10 @@
   <data name="main_html_page" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\res_files\main_html_page.html;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
+  <data name="Markdown_Styles" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\markdown\markdown.styles.xaml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="readme" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\readme.md;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

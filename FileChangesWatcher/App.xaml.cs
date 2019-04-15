@@ -19,7 +19,6 @@ using System.Drawing.Imaging;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
-using IniParser;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Diagnostics.Eventing.Reader;
@@ -933,7 +932,7 @@ namespace FileChangesWatcher
 #endif
             initApplication(e);
         }
-
+        
         /// <summary>
         /// Получить путь к файлу настроек программы, который лежит в том же каталоге, где и программа.
         /// </summary>
@@ -1245,15 +1244,15 @@ namespace FileChangesWatcher
                 String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
                 rk.SetValue(appName, Process.GetCurrentProcess().MainModule.FileName);
 
-                // После установки автозапуска отметить это настройкой в конфигурации:
-                FileIniDataParser fileIniDataParser = new FileIniDataParser();
-                IniParser.Model.IniData iniData = new IniParser.Model.IniData();
-                String iniFilePath = App.getSettingsFilePath(".ini");
-                iniData = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
-                iniData.Sections["General"].RemoveKey("autostart_on_windows");
-                iniData.Sections["General"].AddKey("autostart_on_windows", "true");
-                UTF8Encoding a = new UTF8Encoding();
-                fileIniDataParser.WriteFile(iniFilePath, iniData, Encoding.UTF8);
+                //// После установки автозапуска отметить это настройкой в конфигурации:
+                //FileIniDataParser fileIniDataParser = new FileIniDataParser();
+                //IniParser.Model.IniData iniData = new IniParser.Model.IniData();
+                //String iniFilePath = App.getSettingsFilePath(".ini");
+                //iniData = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                //iniData.Sections["General"].RemoveKey("autostart_on_windows");
+                //iniData.Sections["General"].AddKey("autostart_on_windows", "true");
+                //UTF8Encoding a = new UTF8Encoding();
+                //fileIniDataParser.WriteFile(iniFilePath, iniData, Encoding.UTF8);
             }
             catch (Exception e)
             {
@@ -1270,13 +1269,13 @@ namespace FileChangesWatcher
                 rk.DeleteValue(appName, false);
 
                 // После установки автозапуска отметить это настройкой в конфигурации:
-                FileIniDataParser fileIniDataParser = new FileIniDataParser();
-                IniParser.Model.IniData data = new IniParser.Model.IniData();
-                String iniFilePath = App.getSettingsFilePath(".ini");
-                data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
-                data.Sections["General"].RemoveKey("autostart_on_windows");
-                data.Sections["General"].AddKey("autostart_on_windows", "false");
-                fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
+                //FileIniDataParser fileIniDataParser = new FileIniDataParser();
+                //IniParser.Model.IniData data = new IniParser.Model.IniData();
+                //String iniFilePath = App.getSettingsFilePath(".ini");
+                //data = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
+                //data.Sections["General"].RemoveKey("autostart_on_windows");
+                //data.Sections["General"].AddKey("autostart_on_windows", "false");
+                //fileIniDataParser.WriteFile(iniFilePath, data, Encoding.UTF8);
             }
             catch (Exception e)
             {
@@ -1310,22 +1309,12 @@ namespace FileChangesWatcher
             }
 
             // Проверить существование ini-файла. Если его нет, то создать его:
-            FileIniDataParser fileIniDataParser = new FileIniDataParser();
-            IniParser.Model.IniData iniData = new IniParser.Model.IniData();
-            String iniFilePath = getSettingsFilePath(".ini");
+            //String iniFilePath = getSettingsFilePath(".ini");
             String jsonFilePath = getSettingsFilePath(".js");
             JObject jsonData = new JObject();
 
-            if (LongFile.Exists(iniFilePath) == false)
+            if (LongFile.Exists(jsonFilePath) == false)
             {
-                iniData.Sections.AddSection("Comments");
-                iniData.Sections.AddSection("General");
-                iniData.Sections.AddSection("Extensions");
-                iniData.Sections.AddSection("UserExtensions");
-                iniData.Sections.AddSection("FoldersForWatch");
-                iniData.Sections.AddSection("FoldersForExceptions");
-                iniData.Sections.AddSection("FileNamesExceptions");
-
                 jsonData["General"]                 = new JObject();
                 jsonData["Extensions"]              = new JArray();
                 jsonData["UserExtensions"]          = new JArray();
@@ -1335,43 +1324,23 @@ namespace FileChangesWatcher
                 jsonData["FoldersForWatch"]         = new JArray();
                 jsonData["FoldersForExceptions"]    = new JArray();
 
-                iniData.Sections["Comments"].AddKey("All extensions in Extensions Section are union in one string. Can be RegEx.");
-                iniData.Sections["Comments"].AddKey("All FoldersForExceptions Section   used in function StartsWith. Not use RegEx.");
-                iniData.Sections["Comments"].AddKey("All FileNamesExceptions Section    used in StartsWith. Not use RegEx.");
-                iniData.Sections["Comments"].AddKey("All keys in sections have to be unique in their sections.");
                 // Пример записи комментария вместе со значением. Отдельно от значения в этом компоненте комментарии не пишутся
                 //data.Sections["Comments"].AddKey("key01", "disabled ; Отключить параметр."); 
 
 
                 // Количество файлов, видимое в меню:
-                iniData.Sections["General"].AddKey("log_contextmenu_size", "10");
                 jsonData["General"]["log_contextmenu_size"] = 10;
                 // Отображать уведомления (всплывающие балоны):
-                iniData.Sections["General"].AddKey("display_notifications", "true"); //Отображать уведомления disabled - по-умолчанию ; disabled/enabled ");
                 jsonData["General"]["display_notifications"] = true;
                 // Активация логирования в файл:
-                iniData.Sections["General"].AddKey("log", "true"); // true/false ");
                 jsonData["General"]["log"] = true;
                 // Путь файлов логирования:
-                iniData.Sections["General"].AddKey("log_path", "."); // Путь для записи логов ( . - текущий каталог приложения ). Логи будут вестись, только если параметр log_file = true");
                 jsonData["General"]["log_path"] = ".";
                 // Префикс файлов логирования. Если программа будет записывать файлы логов на общий сетевой каталог, то нужно, чтобы такие файлы не пересекались с файлами других компьюеров
-                iniData.Sections["General"].AddKey("log_file_prefix", ""); // Префикс файла логов (на случай если файлы будут выкладываться в общий каталог и чтобы они не перезатирали файлы от других компьютеров");
                 jsonData["General"]["log_file_prefix"] = "";
 
                 {
                     // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки^
-                    iniData.Sections["Extensions"].AddKey("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z");
-                    iniData.Sections["Extensions"].AddKey("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw");
-                    iniData.Sections["Extensions"].AddKey("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm");
-                    iniData.Sections["Extensions"].AddKey("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm");
-                    iniData.Sections["Extensions"].AddKey("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl");
-                    iniData.Sections["Extensions"].AddKey("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp");
-                    iniData.Sections["Extensions"].AddKey("extensions03", ".cs|.xaml|.config|.ico");
-                    iniData.Sections["Extensions"].AddKey("extensions04", ".gitignore|.md");
-                    iniData.Sections["Extensions"].AddKey("extensions05", ".msg|.ini");
-                    iniData.Sections["Extensions"].AddKey("others", ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
-
                     JArray jextensions =  ((JArray)jsonData["Extensions"]);
                     jextensions.Add(new JObject( new JProperty("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z")));
                     jextensions.Add(new JObject( new JProperty("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw")));
@@ -1386,21 +1355,13 @@ namespace FileChangesWatcher
                 }
 
                 {
-                    iniData.Sections["UserExtensions"].AddKey("extensions01", ".json");
-                    iniData.Sections["UserExtensions"].AddKey("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf");
-
                     JArray jUserExtensions =  ((JArray)jsonData["UserExtensions"]);
-                    jUserExtensions.Add(new JObject( new JProperty("extensions01", ".json")));
+                    jUserExtensions.Add(new JObject( new JProperty("extensions01", ".json|.md|.js")));
                     jUserExtensions.Add(new JObject( new JProperty("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf")));
                 }
 
                 {
-                    //data.Sections["Extensions"].AddKey("", "");
                     // Список каталогов, за которыми надо следить:
-                    iniData.Sections["FoldersForWatch"].AddKey("folder01", @"D:\");
-                    iniData.Sections["FoldersForWatch"].AddKey("folder02", @"E:\Docs");
-                    iniData.Sections["FoldersForWatch"].AddKey("folder03", @"F:\");
-
                     JArray jFoldersForWatch = ((JArray)jsonData["FoldersForWatch"]);
                     jFoldersForWatch.Add(new JObject( new JProperty("folder01", @"D:\")));
                     jFoldersForWatch.Add(@"E:\Docs");
@@ -1409,22 +1370,14 @@ namespace FileChangesWatcher
 
                 {
                     // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
-                    iniData.Sections["FoldersForExceptions"].AddKey("folder01", "D:\\temp");
-
                     JArray jFoldersForExceptions= ((JArray)jsonData["FoldersForExceptions"]);
                     jFoldersForExceptions.Add(new JObject( new JProperty("folder01", "D:\\temp")));
                 }
 
                 {
-                    iniData.Sections["FileNamesExceptions"].AddKey("file01", "~$");
-
                     JArray jFileNamesExceptions = ((JArray)jsonData["FileNamesExceptions"]);
                     jFileNamesExceptions.Add("~$");
                 }
-
-
-                fileIniDataParser.WriteFile(iniFilePath, iniData, Encoding.UTF8);
-
                 File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(jsonData, Newtonsoft.Json.Formatting.Indented));
             }
             else
@@ -1432,41 +1385,40 @@ namespace FileChangesWatcher
                 _notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
                 try
                 {
-                    iniData = fileIniDataParser.ReadFile(iniFilePath, Encoding.UTF8);
                     jsonData = JObject.Parse(File.ReadAllText(jsonFilePath));
+                    _notifyIcon.IconSource = new BitmapImage(new Uri("pack://application:,,,/Icons/FileChangesWatcher.ico", UriKind.Absolute));
                 }
-                catch (IniParser.Exceptions.ParsingException ex)
+                catch (Exception ex)
                 {
                     appendLogToDictionary("" + ex.Message + "", BalloonIcon.Error);
-                    _notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu, please.";
+                    _notifyIcon.ToolTipText = "FileChangesWatcher not working. Error in ini-file. Open settings in menu.";
+                    _notifyIcon.IconSource = new BitmapImage(new Uri("pack://application:,,,/Icons/FileChangesWatcherDisable.ico", UriKind.Absolute));
                     //_notifyIcon.ShowBalloonTip("Error in ini-file. Open settings in menu, please", ""+ex.Message + "", BalloonIcon.Error);
                     return;
                 }
             }
 
-
             // При первом запуске проверить, если в настройках нет флага, отменяющего автозагрузку,
             // то прописать автозапуск приложения в реестр:
-            if (iniData.Sections["General"].GetKeyData("autostart_on_windows") == null || jsonData["General"]["autostart_on_windows"]==null) {
-                if( MessageBox.Show("Set autostart with windows?\n\n(if you say no then you can do this in context menu later)", "FileChangesWatcher", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    setAutostart();
-                }
-                else
-                {
-                    resetAutostart();
-                }
-            }else 
-            if("true".Equals(iniData.Sections["General"].GetKeyData("autostart_on_windows").Value) || ((bool)jsonData["General"]["autostart_on_windows"])==true){
-                setAutostart();
-            }else{
-                resetAutostart();
-            }
+            //if (jsonData["General"]["autostart_on_windows"]==null) {
+            //    if( MessageBox.Show("Set autostart with windows?\n\n(if you say no then you can do this in context menu later)", "FileChangesWatcher", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            //    {
+            //        setAutostart();
+            //    }
+            //    else
+            //    {
+            //        resetAutostart();
+            //    }
+            //}else 
+            //if("true".Equals((bool)jsonData["General"]["autostart_on_windows"])==true){
+            //    setAutostart();
+            //}else{
+            //    resetAutostart();
+            //}
 
             try
             {
                 // Определить количество пунктов подменю:
-                Settings.log_contextmenu_size = Convert.ToInt32(iniData.Sections["General"].GetKeyData("log_contextmenu_size").Value);
                 Settings.log_contextmenu_size = Convert.ToInt32(jsonData["General"]["log_contextmenu_size"]);
             }
             catch (Exception _ex)
@@ -1476,8 +1428,7 @@ namespace FileChangesWatcher
 
             try
             {
-                // Активировать ли систему логирования (true/false):
-                Settings.bool_display_notifications = Convert.ToBoolean(iniData.Sections["General"].GetKeyData("display_notifications").Value);
+                // Активировать ли систему вывода уведомлений (true/false):
                 Settings.bool_display_notifications = Convert.ToBoolean(jsonData["General"]["display_notifications"]);
             }
             catch (Exception ex)
@@ -1485,11 +1436,9 @@ namespace FileChangesWatcher
                 Console.WriteLine("Ошибка преобразования значения display_notifications в bool. Либо не указано, либо указано не true/false " + ex.Message);
             }
 
-
             try
             {
                 // Активировать ли систему логирования (true/false):
-                Settings.bool_log = Convert.ToBoolean(iniData.Sections["General"].GetKeyData("log").Value);
                 Settings.bool_log = Convert.ToBoolean(jsonData["General"]["log"]);
             }
             catch (Exception ex)
@@ -1500,7 +1449,6 @@ namespace FileChangesWatcher
             try
             {
                 // Каталог, куда складывать файлы логов:
-                Settings.string_log_path = iniData.Sections["General"].GetKeyData("log_path").Value;
                 Settings.string_log_path = Convert.ToString(jsonData["General"]["log_path"]);
                 if (Settings.string_log_path ==".")
                 {
@@ -1527,7 +1475,6 @@ namespace FileChangesWatcher
             try
             {
                 // Префикс файла логов (чтобы не петать с файлами других программ, которые могут писать в общую сетевую папку):
-                Settings.string_log_file_prefix = iniData.Sections["General"].GetKeyData("log_file_prefix").Value;
                 Settings.string_log_file_prefix = Convert.ToString(jsonData["General"]["log_file_prefix"]);
             }
             catch (Exception ex)
@@ -1724,31 +1671,31 @@ namespace FileChangesWatcher
             }
         }
 
-        public static Regex getExtensionsRegEx( IniParser.Model.IniData data, string[] sections)
-        {
-            List<string> arr_extensions_for_filter = new List<String>();
-            String _extensions = "";
-            Regex re = new Regex("\\.");
-            foreach (string section in sections) {
-                if (data.Sections.ContainsSection(section) == true) {
-                    for (int i = 0; i <= data.Sections[section].Count - 1; i++) {
-                        String folder = data.Sections[section].ElementAt(i).Value;
-                        folder = (new Regex("(^|)|(|$)")).Replace(folder, "");
-                        if (folder.Length > 0) {
-                            if (_extensions.Length > 0) {
-                                _extensions += "|";
-                            }
-                            _extensions += re.Replace(folder, "\\.");
-                        }
-                    }
-                }
-            }
-            //_extensions = @".*(" + _extensions + ")$";
-            _extensions = @"$(?<=(" + _extensions + "))";  // Крутое решение по ускорению проверки расширений: http://stackoverflow.com/questions/2081555/testing-for-endswith-efficiently-with-a-regex?answertab=votes#tab-top
-            _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
+        //public static Regex getExtensionsRegEx( IniParser.Model.IniData data, string[] sections)
+        //{
+        //    List<string> arr_extensions_for_filter = new List<String>();
+        //    String _extensions = "";
+        //    Regex re = new Regex("\\.");
+        //    foreach (string section in sections) {
+        //        if (data.Sections.ContainsSection(section) == true) {
+        //            for (int i = 0; i <= data.Sections[section].Count - 1; i++) {
+        //                String folder = data.Sections[section].ElementAt(i).Value;
+        //                folder = (new Regex("(^|)|(|$)")).Replace(folder, "");
+        //                if (folder.Length > 0) {
+        //                    if (_extensions.Length > 0) {
+        //                        _extensions += "|";
+        //                    }
+        //                    _extensions += re.Replace(folder, "\\.");
+        //                }
+        //            }
+        //        }
+        //    }
+        //    //_extensions = @".*(" + _extensions + ")$";
+        //    _extensions = @"$(?<=(" + _extensions + "))";  // Крутое решение по ускорению проверки расширений: http://stackoverflow.com/questions/2081555/testing-for-endswith-efficiently-with-a-regex?answertab=votes#tab-top
+        //    _extensions = (new Regex("(\\|\\|)")).Replace(_extensions, "|");
             
-            return new Regex(_extensions, RegexOptions.IgnoreCase);
-        }
+        //    return new Regex(_extensions, RegexOptions.IgnoreCase);
+        //}
 
         public static Regex getExtensionsRegEx(JObject data, string[] sections) {
             List<string> arr_extensions_for_filter = new List<String>();
@@ -1793,6 +1740,9 @@ namespace FileChangesWatcher
                     }else if (prop.Value.Type == JTokenType.Object) {
                         List<string> list = getListOfInnerValues( (JObject)prop.Value );
                         values.AddRange(list);
+                    }else if (prop.Value.Type == JTokenType.Array) {
+                        List<string> list = getListOfInnerValues( prop.Value );
+                        values.AddRange(list);
                     }
                 }
             }else if (data.Type == JTokenType.Array) {
@@ -1804,6 +1754,9 @@ namespace FileChangesWatcher
                         values.Add(value);
                     }
                     else if (prop.Type == JTokenType.Object) {
+                        List<string> list = getListOfInnerValues( prop );
+                        values.AddRange(list);
+                    }else if (prop.Type == JTokenType.Array) {
                         List<string> list = getListOfInnerValues( prop );
                         values.AddRange(list);
                     }

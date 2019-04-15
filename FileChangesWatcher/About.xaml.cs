@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -20,13 +21,30 @@ namespace FileChangesWatcher
     /// <summary>
     /// Interaction logic for About.xaml
     /// </summary>
-    public partial class About : Window
-    {
+    public partial class About : Window, INotifyPropertyChanged {
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void RaisePropertyChanged(string propertyName) {
+            // Если кто-то на него подписан, то вызывем его
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        }
+        private string _About_Text;
+
+        public string About_Text {
+            get { return _About_Text; }
+            set {
+                _About_Text = value;
+                RaisePropertyChanged(nameof(About_Text));
+            }
+        }
         public About()
         {
             InitializeComponent();
-            this.text_version.Text = "Version: "+Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            DataContext = this;
+            //this.text_version.Text = "Version: "+Assembly.GetExecutingAssembly().GetName().Version.ToString();
             this.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
+            About_Text = System.Text.Encoding.UTF8.GetString(FileChangesWatcher.Properties.Resources.readme).Replace("vvvvvvv", Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -36,7 +54,7 @@ namespace FileChangesWatcher
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri + ",version:" + Assembly.GetExecutingAssembly().GetName().Version.ToString()));
             e.Handled = true;
         }
     }

@@ -104,5 +104,35 @@ namespace FileChangesWatcher.Properties {
                 return ResourceManager.GetString("main_html_page", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;ResourceDictionary xmlns=&quot;http://schemas.microsoft.com/winfx/2006/xaml/presentation&quot;
+        ///                    xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;&gt;
+        ///    &lt;!-- source https://github.com/theunrepentantgeek/Markdown.XAML --&gt;
+        ///    &lt;Style TargetType=&quot;FlowDocument&quot; x:Key=&quot;DocumentStyle&quot;&gt;
+        ///        &lt;Setter Property=&quot;FontFamily&quot;
+        ///                Value=&quot;Calibri&quot; /&gt;
+        ///        &lt;Setter Property=&quot;TextAlignment&quot;
+        ///                Value=&quot;Left&quot; /&gt;
+        ///    &lt;/Style&gt;
+        ///
+        ///    &lt;Style x:Key=&quot;H1Style&quot;
+        ///               TargetType=&quot;Para [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string Markdown_Styles {
+            get {
+                return ResourceManager.GetString("Markdown_Styles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] readme {
+            get {
+                object obj = ResourceManager.GetObject("readme", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

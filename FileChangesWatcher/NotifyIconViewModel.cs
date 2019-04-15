@@ -18,7 +18,6 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using FileChangesWatcher;
 using Microsoft.Win32;
-using IniParser;
 using System.Reflection;
 using System.Windows.Interop;
 using System.Collections.Generic;
