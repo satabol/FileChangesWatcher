@@ -37,6 +37,7 @@
                                   >
         </FlowDocumentScrollViewer>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <TextBlock Margin="5,5,10,0" Text="{Binding AppVersion, UpdateSourceTrigger=PropertyChanged}"/>
             <TextBlock Margin="5,5,10,0"><Hyperlink NavigateUri="mailto:alex-zaharow@yandex.ru?subject=FileChangesWatcher" RequestNavigate="Hyperlink_RequestNavigate">alex-zaharow@yandex.ru</Hyperlink></TextBlock>
             <Button Content="Ok" Click="Button_Click" Width="75"/>
         </StackPanel>

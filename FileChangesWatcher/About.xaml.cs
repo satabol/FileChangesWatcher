@@ -38,6 +38,18 @@ namespace FileChangesWatcher
                 RaisePropertyChanged(nameof(About_Text));
             }
         }
+
+        private string _AppVersion;
+
+        public string AppVersion {
+            get { return _AppVersion; }
+            set { 
+                _AppVersion = value; 
+                RaisePropertyChanged(nameof(AppVersion));
+            }
+        }
+
+
         public About()
         {
             InitializeComponent();
@@ -45,6 +57,7 @@ namespace FileChangesWatcher
             //this.text_version.Text = "Version: "+Assembly.GetExecutingAssembly().GetName().Version.ToString();
             this.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
             About_Text = System.Text.Encoding.UTF8.GetString(FileChangesWatcher.Properties.Resources.readme).Replace("vvvvvvv", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            AppVersion = " v." + FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location).FileVersion;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
