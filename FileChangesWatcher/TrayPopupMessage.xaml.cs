@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -81,7 +82,11 @@ namespace FileChangesWatcher
                 if (tb.CustomBalloon != null) {
                     tb.CustomBalloon.IsOpen = false;
                 }
-                Process.Start(_path);
+                if(File.Exists(_path)==true) {
+                    Process.Start(_path);
+                } else {
+                    App.ShowMessage($"Файл {_path} ещё не загружен или удалён.");
+                }
             };
             if ((_buttons & ControlButtons.Run) == 0)
             {
