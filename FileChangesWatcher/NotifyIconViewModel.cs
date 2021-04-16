@@ -140,12 +140,14 @@ namespace FileChangesWatcher
                 {
                     CommandAction = () =>
                     {
-                        String iniFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+                        String iniFilePath = null;
                         iniFilePath = Process.GetCurrentProcess().MainModule.FileName;
-                        iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+                        //iniFilePath = System.IO.Path.GetDirectoryName(iniFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(iniFilePath) + ".ini";
+                        iniFilePath = System.IO.Path.ChangeExtension(iniFilePath, ".ini");
                         if (LongFile.Exists(iniFilePath) == false)
                         {
-                            MessageBox.Show("Файл настроек не обнаружен.");
+                            //MessageBox.Show("Файл настроек не обнаружен.");
+                            MessageBox.Show("File of settings not found.");
                         }else
                         {
                             Process.Start(iniFilePath);
@@ -160,30 +162,15 @@ namespace FileChangesWatcher
             get {
                 return new DelegateCommand {
                     CommandAction = () => {
-                        String jsFilePath = null; // System.IO.Path.GetDirectoryName(Environment.CommandLine.Replace("\"", "")) + "\\Stroiproject.ini";
+                        String jsFilePath = null;
                         jsFilePath = Process.GetCurrentProcess().MainModule.FileName;
-                        jsFilePath = System.IO.Path.GetDirectoryName(jsFilePath) + "\\" + System.IO.Path.GetFileNameWithoutExtension(jsFilePath) + ".js";
+                        jsFilePath = System.IO.Path.ChangeExtension(jsFilePath, ".js");
                         if (LongFile.Exists(jsFilePath) == false) {
-                            MessageBox.Show("Файл настроек не обнаружен.");
+                            MessageBox.Show( $"File of settings must have name '{jsFilePath}'. Not found.");
                         }
                         else {
                             Process.Start("explorer.exe", "/select,\""+jsFilePath+"\"");
                         }
-                    },
-                    CanExecuteFunc = () => true
-                };
-            }
-        }
-
-        public ICommand OpenHelp
-        {
-            get
-            {
-                return new DelegateCommand
-                {
-                    CommandAction = () =>
-                    {
-                        System.Diagnostics.Process.Start("http://serv-japp.stpr.ru:4070/support/Soft/FileChangesWatcher.html");
                     },
                     CanExecuteFunc = () => true
                 };
@@ -272,8 +259,6 @@ namespace FileChangesWatcher
                         }
                         else
                         {
-                            //MessageBox.Show( this, "Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
-                            //App.Sh
                             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "Error on access to register FileChangesWatcher in Windows Context Menu. You have to be administrator", BalloonIcon.Error);
                         }
                     },
@@ -298,8 +283,6 @@ namespace FileChangesWatcher
                         }
                         else
                         {
-                            //MessageBox.Show( this, "Error on access to register FileChangesWatcher as Windows Context Menu", "FileChangesWatcher", MessageBoxButton.OK, MessageBoxImage.Error);
-                            //App.Sh
                             App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "No paths to set", BalloonIcon.Error);
                         }
                     },
@@ -308,102 +291,12 @@ namespace FileChangesWatcher
             }
         }
 
-        /*
-        public ICommand TestToast
-        {
-            get
-            {
-                return new DelegateCommand
-                {
-                    CommandAction = () =>
-                    {
-                        // In a real app, these would be initialized with actual data
-                        string from = "Jennifer Parker";
-                        string subject = "Photos from our trip";
-                        string body = "Check out these awesome photos I took while in New Zealand!";
-
-
-                        // Construct the tile content
-                        TileContent content = new TileContent()
-                        {
-                            Visual = new TileVisual()
-                            {
-                                TileMedium = new TileBinding()
-                                {
-                                    Content = new TileBindingContentAdaptive()
-                                    {
-                                        Children =
-                                            {
-                                                new TileText()
-                                                {
-                                                    Text = from
-                                                },
-
-                                                new TileText()
-                                                {
-                                                    Text = subject,
-                                                    Style = TileTextStyle.CaptionSubtle
-                                                },
-
-                                                new TileText()
-                                                {
-                                                    Text = body,
-                                                    Style = TileTextStyle.CaptionSubtle
-                                                }
-                                            }
-                                    }
-                                },
-
-                                TileWide = new TileBinding()
-                                { 
-                                    Content = new TileBindingContentAdaptive()
-                                    {
-                                        Children =
-                                            {
-                                                new TileText()
-                                                {
-                                                    Text = from,
-                                                    Style = TileTextStyle.Subtitle
-                                                },
-
-                                                new TileText()
-                                                {
-                                                    Text = subject,
-                                                    Style = TileTextStyle.CaptionSubtle
-                                                },
-
-                                                new TileText()
-                                                {
-                                                    Text = body,
-                                                    Style = TileTextStyle.CaptionSubtle
-                                                }
-                                            }
-                                    }
-                                }
-                            }
-                        };
-
-                        Windows.Data.Xml.Dom.XmlDocument xml_doc = new Windows.Data.Xml.Dom.XmlDocument();
-                        xml_doc.LoadXml(content.GetContent());
-                        //var notification = new TileNotification( xml_doc );
-                        String APP_ID = "Microsoft.Samples.DesktopToastsSample";
-                        ToastNotification toast = new ToastNotification(xml_doc);
-                        ToastNotificationManager.CreateToastNotifier(APP_ID).Show(toast);
-
-                    },
-                    CanExecuteFunc = () => true
-                };
-            }
-        }
-        //*/
-
         public ICommand OpenAbout
         {
             get
             {
                 return new DelegateCommand
                 {
-                    //CanExecuteFunc = () => Application.Current.MainWindow == null,
                     CommandAction = () =>
                     {
                         About window = new About();
@@ -419,7 +312,7 @@ namespace FileChangesWatcher
             get {
                 return new DelegateCommand {
                     CommandAction = () => {
-                        _MenuItemData.icons_map = new Dictionary<string, BitmapImage>();
+                        MenuItemData.icons_map = new Dictionary<string, BitmapImage>();
                     },
                     CanExecuteFunc = () => true
                 };
@@ -439,7 +332,6 @@ namespace FileChangesWatcher
         {
             get
             {
-                //return new DelegateCommand { CommandAction = () => { Application.Current.Shutdown(); } };
                 return new DelegateCommand { CommandAction = () => { App.Current.Shutdown(0); } };
             }
         }

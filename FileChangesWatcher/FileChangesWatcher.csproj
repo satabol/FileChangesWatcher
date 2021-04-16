@@ -303,7 +303,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Hardcodet.Wpf.TaskbarNotification, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.8\lib\net40\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -319,8 +318,8 @@
     <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop, Version=1.0.168.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="SharpShell, Version=2.2.0.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\SharpShell.dll</HintPath>
@@ -365,8 +364,8 @@
     <Reference Include="PresentationFramework">
       <Private>False</Private>
     </Reference>
-    <Reference Include="XamlAnimatedGif, Version=1.1.10.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\XamlAnimatedGif.1.1.10\lib\net40\XamlAnimatedGif.dll</HintPath>
+    <Reference Include="XamlAnimatedGif, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\XamlAnimatedGif.1.2.3\lib\net40\XamlAnimatedGif.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -381,8 +380,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="AuditPolicy.cs" />
-    <Compile Include="ContextMenuForFolders.cs" />
     <Compile Include="DialogListingDeletedFiles.xaml.cs">
       <DependentUpon>DialogListingDeletedFiles.xaml</DependentUpon>
     </Compile>
@@ -567,6 +564,15 @@
     <Resource Include="markdown.images\file.png" />
     <Resource Include="markdown.images\file.01.png" />
     <Resource Include="markdown.images\FileChangeWatcherNotifyMessages.01.gif" />
+    <Resource Include="markdown.images\file.02.png" />
+    <Resource Include="markdown.images\file.03.png" />
+    <Resource Include="markdown.images\file.04.png" />
+    <Resource Include="markdown.images\file.05.png" />
+    <Resource Include="markdown.images\file.06.png" />
+    <Resource Include="markdown.images\BlenderSaveFileAndOpenItsPlace.gif" />
+    <Resource Include="markdown.images\BlenderSaveImageAndScripts.gif" />
+    <Resource Include="markdown.images\SaveWordFile.gif" />
+    <Resource Include="markdown.images\file.07.png" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -582,13 +588,15 @@
          $(PostBuildEventDependsOn);
          PostBuildMacros;
     </PostBuildEventDependsOn>
-    <PostBuildEvent>if exist "%25PROGRAMFILES%25\7-Zip\7z.exe" (
-"%25PROGRAMFILES%25\7-Zip\7z.exe" a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath)
+    <PostBuildEvent>WHERE 7z.exe
+IF %25ERRORLEVEL%25 NEQ 0 (ECHO 7z.exe wasn't found) ELSE (
+rem Zip src and .exe
+7z.exe a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath)
 cd /d $(ProjectDir)
-"%25PROGRAMFILES%25\7-Zip\7z.exe" a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*
+7z.exe a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*
 cd /d $(TargetDir)
-)
 explorer.exe /select,"$(TargetDir)$(ProjectName).@(VersionNumber).zip"
+)
 exit 0</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

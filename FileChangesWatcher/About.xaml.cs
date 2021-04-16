@@ -65,9 +65,15 @@ namespace FileChangesWatcher
             this.Close();
         }
 
+        private void Hyperlink_RequestNavigateWithVersion(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo( e.Uri.AbsoluteUri + ",version:" + Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+            e.Handled = true;
+        }
+
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri + ",version:" + Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+            Process.Start(new ProcessStartInfo( e.Uri.AbsoluteUri ));
             e.Handled = true;
         }
     }

@@ -1,235 +1,196 @@
-# FileChangesWatcher
+## Download
 
-## Введение
+https://sourceforge.net/projects/filechangeswatcher/files/
 
-По поводу отслеживания удаления файла: http://stackoverflow.com/questions/7861512/get-username-of-an-accesed-file?answertab=votes#tab-top
-Действительно - без аудита системного журнала, где пишутся события удаления - не обойтись. Для правильной настройки аудита см.: https://gallery.technet.microsoft.com/scriptcenter/How-to-audit-changed-39afba72
-http://www.intelliadmin.com/index.php/2008/03/use-auditing-to-track-who-deleted-your-files/
+No drivers, no spyware, no admin rights.
 
-Приложение, которое следит за изменениями в указанных дисках/каталогах и на лету формирует список файлов и каталогов в которых произошли изменения.
+## Description
 
-![](images/1.png)
+![File.05](markdown.images/file.05.png)
 
-## Можно ли отследить процесс, который изменил файл?
+This application for **Windows** XP/8/10 users only and it is just a UI of WinAPI functions
+System.IO.FileSystemEventHandler. See documentation of Win-Api main functions:
 
-Коротко - НЕТ.
+https://docs.microsoft.com/en-us/dotnet/api/system.io.filesystemeventhandler?view=netframework-4.0
 
-http://ebanshi.cc/questions/4262160/is-it-possible-to-identify-what-process-is-changing-a-file-with-filesystemwatche
+and
 
-![](images/24.png)
+https://weblogs.asp.net/ashben/31773
 
-## Примеры работы приложения.
+Application has tray icon. When user or program create files, change files, remove files then this application
+show popup of event and you can click it to open windows explorer and set current file (if file exists).
 
-Редактор иконок редактирует файл:
+## When to use it?
 
-![](images/message.06.01.gif)
+I use it when I need to know some disk activity:
 
-Слежение за файлом Excel:
+- Save file activity:
 
-![](images/message.07.01.gif)
+![Blender Save File And Open Its Place](markdown.images/BlenderSaveFileAndOpenItsPlace.gif)
 
-Каждый файл в логе имеет такой же значек как и в проводнике windows explorer:
+- Save Scripts and images:
 
-![](images/15.png)
+![Blender Save Image And Scripts](markdown.images/BlenderSaveImageAndScripts.gif)
 
-## Описание приложения
+- mysql activity to modify database:
 
-Перед началом работы приложение определяет свои настройки из файла **FileChangesWatcher.ini** и определяет настройки:
+![File.02](markdown.images/file.02.png)
 
-1. Какие диски и каталоги надо мониторить?
-2. Какие файлы по расширению надо мониторить?
-3. Какие каталоги надо исключить из миниторинга?
-4. Какие файлы (по началу имени) нужно пропускать?
+- Save MS Word file
 
-### Описание параметров приложения
+![Save Word File](markdown.images/SaveWordFile.gif)
 
-Параметры приложения можно открыть с помощью приложения:
+## Settings
 
-![](images/7.png)
+The program has several settings in file FileChangesWatcher.js. This file has json format and has several sections:
 
-При этом запуститься редактор файлов ini по-умолчанию (обычно блокнот).
+![File.03](markdown.images/file.03.png)
 
-Параметры для настройки **п.1** указываются в секции [FoldersForWatch]:
+If you do not have this file then application create it with default values.
 
-![](images/2.png)
+#### General
 
-Обратите внимание, что ключи должны разными, и в одном ключе нельзя указывать больше одного каталога (это не регулярное выражение).
-Имена ключей значения не имеют. Эти значения можно заносить вручную. При старте программа создаёт отдельный watcher для каждого каталога/диска
-за которым она будет наблюдать. Но создаёт только для тех каталов, которые присутствуют на диске. Список каталогов, за которыми программа будет наблюдать
-выдаётся после запуска программы:
+```JSON
+  "General": {
+    "log_contextmenu_size": 10,
+    "display_notifications": true,
+    "log": true,
+    "log_path": ".",
+    "log_file_prefix": ""
+  },
+```
 
-![](images/4.png)
+- **log_contextmenu_size**: 10 - How many items you will see in context menu of this application when you press right mouse button:
 
-Параметры для настройки **п.2** указываются в серсии [Extensions]:
+![File.04](markdown.images/file.04.png)
 
-![](images/3.png)
+- **display_notifications**: true/false - Show popup notifications when this application catch dist events
 
-Имена ключей должны быть разными. Однако в отличии от каталогов в одном ключе в этом разделе может быть указано несколько расширений. Разделителем у них является
-символ вертикальной верты **"|"**. Расширения файлов приложение преобразует в регулярное выражение, суммируя ключи. В результате получается шаблон 
-**^.*(\.ext1|\.ext2|...|\.ext3)$**. Имена ключей значения не имеют. Можно давать им осмысленные имена, чтобы понимать о каком пакете программ идёт речь.
+![File.05](markdown.images/file.05.png)
 
-Параметры для настройки **п.3** указываются в секции [FoldersForExceptions]
+- **log**: true/false - write all events to log file.
+- **log_path**: "." | "D:/log" - Where to write log files. "." - into folder where application runs.
+- **log_file_prefix**: "" - prefix for log files. This program always append current date at end of file name with format YYYY.MM.dd. 
 
-![](images/5.png)
+#### Extensions
 
-Каждому ключу соответствует один каталог. Соответственно в одном ключе нельзя указать больше одного каталога. Когда операционная система
-уведомляет программу, что обнаружено изменение, то FileChangesWatcher сначала проверяет, а не случилось ли изменение в каталоге, который
-является исключением? Если да, то FileChangesWatcher игнорирует изменение. Имена каталогов-исключений не сравниваются просто как начало строк,
-а проверяется, чтобы последние имена отличались и не принадлежали тому каталогу, который просто начинается на похожее имя. Например:
-
-если настройка **folder6 = F:\Enternet\2016\16.05.24\del.01**, то каталог **F:\Enternet\2016\16.05.24\del.01\test** будет исключаться из наблюдения. 
-Однако каталог **F:\Enternet\2016\16.05.24\del.01-копия** не будет исключаться из наблюдения, т.к. по сути он не является подкаталогом параметра folder6,
-а просто находится с ним в одном каталоге.
-
-Параметры **п.4** хранятся в секции [FileNamesExceptions]
-
-![](images/6.png)
-
-Эти параметры также перечисляются по-одиночке и не являются регулярными выражениями. Эти значения сравниваются только как начала строк имён файлов. Например,
-**file01 = ~$** даст положительный ответ на файл **F:\docs\ ~$Договор.docx** (временный файл office).
-
-### Описание меню управления приложением.
-
-![](images/8.png)
-
-## Работа с контекстным меню приложения
-
-Чтобы работать с контекстным меню приложения надо это меню зарегистрировать с помощью меню управления приложением (Требуются права локального администратора):
-
-![](images/9.png)
-
-После регистрации в контекстном меню проводника Windows explorer появится меню FileChangesWatcher с подменю:
-
-В контекстном меню на левой панели (Добавить каталог в секцию [FoldersForExceptions]):
-
-![](images/10.png)
-
-В контекстно меню каталога на правой панели (Добавить каталог в секцию [FoldersForExceptions])
-
-![](images/11.png)
-
-В контекстном меню на файлах (Добавить расширение файла в секцию [Extensions])
-
-![](images/12.png)
-
-Это позволяет упростить добавление соответствующих элементов в разделы настройки программы:
-
-![](images/16.png)
-
-После добавления нужно заново применить настройки (чтобы не перезагружать программу):
-
-![](images/13.png)
-
-Для отмены контестного меню проводника выберите пункт (UnRegister Windows Explorer Context menu) (Так же требуются права локального администратора):
-
-![](images/14.png)
-
-## Для разработчика
-
-Для сборки проекта необходимо иметь доступ к Интернет, чтобы иметь возможность загрузить сторонние компоненты приложения.
-
-### Запуск приложения на отладку в режиме контекстного меню проводника
-
-Первый способ отладки приложения в таком режиме можно выполнить с помощью инструмента SharpShellTools. Хорошее описание: http://www.codeproject.com/Articles/512956/NET-Shell-Extensions-Shell-Context-Menus
-
-Инструмент Server Manager, который описан в документе, ищите в каталоге, куда установлен компонент SharpShellTools:
-
-![](images/28.png)
-
-Второй способ отладки - выполнить подсоединение к процессу Explorer в Visual Studio:
-
-- После сборки запустить приложение как .exe под администратором и выполнить регистрацию компонента:
-
-![](images/17.png)
-
-![](images/18.png)
-
-В Visual Studio открыть диалоговое окно подсоединения к процессу:
-
-![](images/19.png)
-
-Выбрать/открыть Windows Explorer в котором будем тестировать компонент:
-
-![](images/20.png)
-
-Выполнить попытку вызова контекстного меню:
-
-![](images/21.png)
-
-До вызова контекстного меню вы должны получить переход в отладку и попасть в точку останова:
-
-![](images/22.png)
-
-### Сборка приложения после Register/Unregister компонента
-
-После вызова функций приложения в проводнике файл FileChangesWatcher.exe оказывается заблокирован на запись и выполнить сборку приложения нельзя:
-
-![](images/23.png)
-
-Дело в том, что после запуска контекстного меню файл FileChangesWatcher.exe заблокирован windows explorer. Чтобы разблокировать этот файл нужно закрыть все
-экземпляры windows explorer:
-
-![](images/24.png)
-
-Но при этом среди процессов они всё-таки остаются и их там так же надо закрыть:
-
-![](images/25.png)
-
-Повторяем сборку:
-
-![](images/26.png)
-
-Сборка выполнилась успешно. Снова запустим проводник:
-
-![](images/27.png)
-
-(Возможно, что именно по этой причине требуется перезагружать компьютер после uninstall приложений)
-
-
-## RegisterAssembly
-
-Обратить внимание на следующую особенность работы функции RegisterAssembly:
-
-![](images/29.png)
-
-Чтобы приложение нормально регистрировалось в windows explorer на платформах x64 обязательно нужно ОТКЛЮЧИТЬ настройку "prefer 32-bit":
-
-![](images/30.png)
-
-Если этого не сделать, то функция будет возвращать успешную регистрацию, однако по факту никакого подменю не появится.
-
-## Настройка аудита для генерации событий удаления файлов и каталогов:
-
-Включить систему аудита файлов (минимальная настройка для регистрации успешных событий):
-
-run **secpol.msc**
-
-![](images/31.png)
-
-Настроить аудит файлов и каталогов, за которыми требуется установить наблюдение:
-
-![](images/32.png)
-
-После этого в журнале событий начнут появляться сообщения:
-
-![](images/33.png)
-
-Вот их программа и будет анализировать.
-
-## Дополнительные материалы по теме.
-
-Аудит удаления и доступа к файлам и запись событий в лог-файл средствами Powershell: https://habrahabr.ru/post/150149/
-
-![](images/34.png)
-
-Как открыть WPF WebBrowser страницу не по ссылке, а по содержимому: http://stackoverflow.com/questions/1598030/set-system-windows-controls-webbrowsers-content-to-a-static-html-literal?answertab=votes#tab-top
-
-![](images/35.png)
-
-C шарп.  Проверка существования элемента в коллекции по его значению: https://msdn.microsoft.com/ru-ru/library/bfed8bca%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
-
-![](images/36.png)
-
-Windows. Настройка политики безопасности Windows 10 Home Edition: http://winitpro.ru/index.php/2015/10/02/redaktor-gruppovyx-politik-dlya-windows-10-home-edition/
-
-![](images/37.png)
+```JSON
+"Extensions": [
+    [{"archivers": ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z|.rar"}],
+    {
+      "office": ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw|.ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm|.vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm",
+      "autodesk": ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl",
+      "images": ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp",
+      "visual_studio": ".csproj|.sln|.vsix",
+    },
+    {
+      "extensions03": ".cs|.xaml|.config|.ico",
+    },
+    {
+      "extensions04": ".gitignore|.md",
+    },
+    {
+      "extensions05": ".msg|.ini"
+    },
+    ".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js|.php|.json|.exe|.html|.htm|.css|.csv|.dbd|.sql|.svg|.conf|.msi|.cptx|.mp4|.mp3|.flv|.dbf|.jsp|.rpm|.det|.dll",
+	".pro",
+	"trail.txt.[0-9]{2}",
+	".dvb|.txt",
+	".dbd", // diagrams dbForge
+	".mp4|.ctb",
+  ],
+```
+
+This is list of extensions for that application catch disk file events. WinAPI generate file events always for any files and disk.
+This is very huge count of events! So this is not convinent. So this is list of extension with devider '|'. I create single regular
+expression of this list. You can experiment with this format. See:
+
+https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex?view=net-5.0
+
+http://regexstorm.net/tester
+
+JSON struct in this setting has no means. Program read only values. So you can create any hierarchy you want to classify extensions.
+
+
+#### UserExtensions
+
+```JSON
+  "UserExtensions": [
+    {
+      "extensions01": ".json"
+    },
+    {
+      "officeword": ".doc|.docx|.docm|.dotx|.dotm|.rtf|.xls|.xlsx|.xlsm|.vsd|.vsdx",
+      "visual_studio": ".csproj|.sln",
+    },
+    ".bmp|.gif|.jpg|.jpeg|.tiff|.tif|.js|.cs|.java|.exe|.dwg|.dxf|.rar",
+    ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z|.rar|.pro|.dvb|.txt|.pdf|.png|.dll",
+    ".msg",
+    ".dbd", // Diagramm dbForge
+    ".mp4",
+    ".ico|.md|.ctb",
+    ".mht|.html",
+    ".vba|.bas",
+    ".reg",
+    ".pc3",
+    ".mct",  // Midas
+    ".svg|.xaml",
+    ".[0-9]+", // ProE versions files
+    ".g4",
+    ".ifc|.obj",
+    ".py",
+    ".exe|.dll|.h|.c|.cpp",
+    ".blend[0-9]*", // blender
+    ".py",
+  ],
+```
+Only these extensions any user see in the context menu.
+
+![File.06](markdown.images/file.06.png)
+
+#### FileNamesExceptions
+
+```JSON
+  "FileNamesExceptions": [
+    "~$"
+  ]
+```
+Files with whese extensions will exclude to watch. Events of these files will exclude from the context menu and logging.
+
+#### FoldersForWatch
+
+```JSON
+"FoldersForWatch": [
+    {
+      "folder01": "D:\\", // may be string or array of strings. You can finish path with double backslash or without double backslash
+    },
+    {"locals":["E:\\Docs", "F:\\", "T:\\", "C:\\Users", ]},
+  ],
+```
+
+Folders or disks for watch. JSON struct in this setting has no means. Program read only values. So you can create any hierarchy you want to classify extensions.
+
+
+#### FoldersForExceptions
+
+```JSON
+"FoldersForExceptions": [
+    {
+      "folder01": "D:\\temp"
+    },
+    "F:\\Enternet\\projects\\tender\\target"
+  ],
+```
+
+If you want exclude some folders from watch so append them here. JSON struct in this setting has no means. Program read only values. So you can create any hierarchy you want to classify extensions.
+
+## Other
+
+![File.07](markdown.images/file.07.png)
+
+1. Open setting file
+2. Reload settings
+
+## Author
+
+email: **satabol@yandex.ru**
