@@ -590,7 +590,6 @@
     </PostBuildEventDependsOn>
     <PostBuildEvent>WHERE 7z.exe
 IF %25ERRORLEVEL%25 NEQ 0 (ECHO 7z.exe wasn't found) ELSE (
-rem Zip src and .exe
 7z.exe a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath)
 cd /d $(ProjectDir)
 7z.exe a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*

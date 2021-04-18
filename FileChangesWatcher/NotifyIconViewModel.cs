@@ -116,7 +116,7 @@ namespace FileChangesWatcher
                 };
             }
         }
-        public ICommand ApplyIniFile
+        public ICommand ReloadSettings
         {
             get
             {
@@ -125,7 +125,7 @@ namespace FileChangesWatcher
                     CommandAction = () =>
                     {
                         App.initApplication(null);
-                        OnPropertyChanged("SaveToDbOneChecked");
+                        OnPropertyChanged( nameof(ReloadSettings) );
                     },
                     CanExecuteFunc = () => true
                 };

@@ -350,6 +350,10 @@ namespace FileChangesWatcher {
     public partial class App : Application {
         // Добавление пользовательских меню выполнено на основе: https://msdn.microsoft.com/ru-ru/library/ms752070%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
 
+        public App() {
+            process_stack();
+        }
+
         // Классификация элементов контекстного меню с файловыми операциями:
         enum ContextMenu_Group_Names {
             group_files, group_folders, group_logs
@@ -407,7 +411,7 @@ namespace FileChangesWatcher {
         // Пользовательская комманда отображения окна с текстовым содержанием:
         public static RoutedCommand CustomRoutedCommand_ShowMessage = new RoutedCommand();
         private void ExecutedCustomCommand_ShowMessage(object sender, ExecutedRoutedEventArgs e) {
-            String text = (string)e.Parameter;
+            string text = (string)e.Parameter;
             ShowMessage(text);
         }
 
@@ -887,7 +891,7 @@ namespace FileChangesWatcher {
         public static void setAutostart() {
             try {
                 RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
-                String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+                string appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
                 rk.SetValue(appName, Process.GetCurrentProcess().MainModule.FileName);
             } catch(Exception e) {
                 MessageBox.Show(e.Message);
@@ -897,7 +901,7 @@ namespace FileChangesWatcher {
         public static void resetAutostart() {
             try {
                 RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
-                String appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
+                string appName = System.IO.Path.GetFileNameWithoutExtension(Process.GetCurrentProcess().MainModule.FileName);
                 rk.DeleteValue(appName, false);
             } catch(Exception e) {
                 MessageBox.Show(e.Message);
@@ -928,7 +932,6 @@ namespace FileChangesWatcher {
             }
 
             // Проверить существование файла настроек. Если его нет, то создать его:
-            //String iniFilePath = getSettingsFilePath(".ini");
             string jsonFilePath = getSettingsFilePath(".js");
             JObject jsonData = new JObject();
 
@@ -1409,12 +1412,6 @@ namespace FileChangesWatcher {
             return _extensions.IsMatch(user_friendly_path);
         }
 
-        // Параметр, позволяющие выводить сообщение не быстрее 10 раз в сек
-        /// <summary>
-        /// Used to restrict popup frequency
-        /// </summary>
-        static DateTime dt_prev_show_custom_ballon = new DateTime();
-
         // See с http://weblogs.asp.net/ashben/31773
         private static void OnChanged_file(object source, FileSystemEventArgs e) {
             try {
@@ -1425,8 +1422,9 @@ namespace FileChangesWatcher {
                     return;
                 }
 
+                //Console.WriteLine($"{e.ChangeType}: {e.FullPath}");
+
                 WatchingObjectType wType = WatchingObjectType.File;
-                DateTime dt0 = DateTime.Now;
 
                 if(e.ChangeType == WatcherChangeTypes.Deleted) {
                     // При удалении файла я всегда знаю, что это именно файла
@@ -1441,8 +1439,6 @@ namespace FileChangesWatcher {
                 if(wType != WatchingObjectType.File) {
                     return;
                 }
-
-                DateTime dt1 = DateTime.Now;
 
                 if(e.ChangeType == WatcherChangeTypes.Changed && wType == WatchingObjectType.Folder) {
                     return;
@@ -1462,27 +1458,22 @@ namespace FileChangesWatcher {
                                 menuItemData = new MenuItemData_CCRD(e, wType, dt);
                                 MenuItemData last_menuItemData = null;
                                 if(App.stackPaths.Count > 0) {
-                                    last_menuItemData = App.stackPaths.OrderBy(d => d.event_date_time).Last();
+                                    last_menuItemData = App.stackPaths.OrderBy(d => d.event_date_time.Ticks).Last();
                                 }
-
-                                // Проверить, насколько давно выводилось предыдущее окно с сообщением:
-                                long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
-                                TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
 
                                 if(last_menuItemData != null && last_menuItemData.wType != WatchingObjectType.Log) {
                                     MenuItemData_CCRD last_menuItemData_ccrd = ((MenuItemData_CCRD)last_menuItemData);
                                     // Бывает, что некоторое приложение так "увлекается", что генерирует некоторые события по нескольку раз.
-                                    // 
                                     // Решил не показывать быстровозникающие события одинакового типа над одним объектом:
-                                    // Restrict popup several equal events on one object (file or folder) for 1 sec.
-                                    if(last_menuItemData_ccrd.e.ChangeType == e.ChangeType        // Типы совпадают?
-                                        && last_menuItemData_ccrd.e.FullPath == e.FullPath         // Путь совпадает?
-                                        && last_menuItemData_ccrd.wType == WatchingObjectType.File // Полное имя совпадает?
+                                    // Restrict popup of several equal events to one object (file or folder) for 1 sec.
+                                    if(    last_menuItemData_ccrd.e.ChangeType == e.ChangeType            // Типы совпадают?
+                                        && last_menuItemData_ccrd.e.FullPath   == e.FullPath              // Путь совпадает?
+                                        && last_menuItemData_ccrd.wType        == WatchingObjectType.File // Полное имя совпадает?
                                         ) {
                                         // Проверить разницу во времени с предыдущим последним событием и если она меньше одной секунды,
                                         // то удалить предыдущее событие:
-                                        double totalSeconds = (DateTime.Now - last_menuItemData_ccrd.event_date_time).TotalSeconds;
-                                        if(totalSeconds <= 1.0) {
+                                        double totalMilliseconds = (DateTime.Now - last_menuItemData_ccrd.event_date_time).TotalMilliseconds;
+                                        if(totalMilliseconds <= 1000.0) {
                                             stackPaths.Remove(last_menuItemData);
                                             _notifyIcon.ContextMenu.Items.Remove(last_menuItemData.mi);
                                             last_menuItemData = null;
@@ -1491,47 +1482,16 @@ namespace FileChangesWatcher {
                                 }
                                 stackPaths.Add(menuItemData);
 
-                                if(Settings.bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
-                                    TrayPopupMessage popup = null;
-
+                                if(Settings.bool_display_notifications == true){ // && elapsedSpan.TotalMilliseconds > 100) {
                                     BitmapImage bitmapImage = null;
                                     System.Windows.Controls.Image popup_image = null;
-                                    String file_ext = Path.GetExtension(e.FullPath);
+                                    string file_ext = Path.GetExtension(e.FullPath);
                                     // Кешировать иконки для файлов:
                                     if(MenuItemData.icons_map.TryGetValue(file_ext, out bitmapImage) == true && bitmapImage != null) {
                                         popup_image = new System.Windows.Controls.Image();
                                         popup_image.Source = bitmapImage;
-
                                     }
-                                    if(e.ChangeType == WatcherChangeTypes.Deleted) {
-                                        popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
-#if (!_Evgeniy)
-                                                TrayPopupMessage.ControlButtons.Clipboard
-#else
-                                                TrayPopupMessage.ControlButtons.None
-#endif
-                                        );
-                                        popup.MouseDown += (sender, args) => {
-                                            if(App.NotifyIcon.CustomBalloon != null) {
-                                                App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                            }
-                                        };
-                                    } else {
-                                        popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
-#if (!_Evgeniy)
-                                        TrayPopupMessage.ControlButtons.Clipboard |
-#endif
-                                        TrayPopupMessage.ControlButtons.Run);
-
-                                        popup.MouseDown += (sender, args) => {
-                                            if(App.NotifyIcon.CustomBalloon != null) {
-                                                App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                            }
-                                            App.gotoPathByWindowsExplorer(popup.path, popup.wType);
-                                        };
-                                    }
-                                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
-                                    dt_prev_show_custom_ballon = DateTime.Now;
+                                    FIFO_Stack_Events.Enqueue(new PopupInfo(e, menuItemData, popup_image) );
                                 }
                             } catch(Exception _ex) {
                                 _ex = _ex;
@@ -1551,7 +1511,7 @@ namespace FileChangesWatcher {
                 DateTime dt = DateTime.Now;
                 WatchingObjectType wType = WatchingObjectType.Unknown;  // При удалении указывается этот тип, т.к. после удаления уже неизвестно, что это было.
                 if(e.ChangeType == WatcherChangeTypes.Deleted) {
-                    // При удалени каталога я всегда знаю, что это именно каталог
+                    // При удалении каталога я всегда знаю, что это именно каталог
                     // Заодно и экономим, что при удалении не надо проверять тип объекта методом Exists (метод затратный):
                     wType = WatchingObjectType.Folder;
                 } else {
@@ -1582,49 +1542,16 @@ namespace FileChangesWatcher {
                             menuItemData = new MenuItemData_CCRD(e, WatchingObjectType.Folder, dt);
                             stackPaths.Add(menuItemData);
 
-                            // Проверить, насколько давно выводилось предыдущее окно с сообщением:
-                            long elapsedTicks = DateTime.Now.Ticks - dt_prev_show_custom_ballon.Ticks;
-                            TimeSpan elapsedSpan = new TimeSpan(elapsedTicks);
-                            System.Windows.Controls.Image popup_image = new System.Windows.Controls.Image();
-                            {
-                                BitmapImage bi = new BitmapImage();
-                                bi.BeginInit();
-                                bi.UriSource = new Uri(@"Icons\folder-horizontal-open.png", UriKind.Relative);
-                                bi.EndInit();
-                                popup_image.Source = bi;
-                            }
-                            if(Settings.bool_display_notifications == true && elapsedSpan.TotalMilliseconds > 100) {
-                                TrayPopupMessage popup = null;
-                                if(e.ChangeType == WatcherChangeTypes.Deleted) {
-                                    popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
-#if (!_Evgeniy)
-                            TrayPopupMessage.ControlButtons.Clipboard
-#else
-                            TrayPopupMessage.ControlButtons.None
-#endif
-                        );
-                                    popup.MouseDown += (sender, args) => {
-                                        if(App.NotifyIcon.CustomBalloon != null) {
-                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                        }
-                                    };
-                                } else {
-                                    popup = new TrayPopupMessage(e.FullPath, menuItemData.wType.ToString() + " " + e.ChangeType.ToString(), menuItemData.wType, App.NotifyIcon, popup_image,
-#if (!_Evgeniy)
-                            TrayPopupMessage.ControlButtons.Clipboard
-#else
-                            TrayPopupMessage.ControlButtons.None
-#endif
-                        );
-                                    popup.MouseDown += (sender, args) => {
-                                        if(App.NotifyIcon.CustomBalloon != null) {
-                                            App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                        }
-                                        App.gotoPathByWindowsExplorer(popup.path, popup.wType);
-                                    };
+                            if(Settings.bool_display_notifications == true){
+                                System.Windows.Controls.Image popup_image = new System.Windows.Controls.Image();
+                                {
+                                    BitmapImage bi = new BitmapImage();
+                                    bi.BeginInit();
+                                    bi.UriSource = new Uri(@"Icons\folder-horizontal-open.png", UriKind.Relative);
+                                    bi.EndInit();
+                                    popup_image.Source = bi;
                                 }
-                                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
-                                dt_prev_show_custom_ballon = DateTime.Now;
+                                FIFO_Stack_Events.Enqueue(new PopupInfo(e, menuItemData, popup_image) );
                             }
                         } catch(Exception _ex) {
                             _ex = _ex;
@@ -1636,6 +1563,90 @@ namespace FileChangesWatcher {
                 reloadCustomMenuItems();
             } catch(Exception _ex) {
                 _ex = _ex;
+            }
+        }
+
+        class PopupInfo {
+            public FileSystemEventArgs e;
+            public MenuItemData mi;
+            public System.Windows.Controls.Image popup_image;
+
+            private PopupInfo() {
+            }
+            public PopupInfo(FileSystemEventArgs _e, MenuItemData _mi, System.Windows.Controls.Image _popup_image) {
+                e = _e;
+                mi = _mi;
+                popup_image = _popup_image;
+            }
+        }
+
+        private static ConcurrentQueue<PopupInfo> FIFO_Stack_Events = new ConcurrentQueue<PopupInfo>();
+        
+        private object lockThis = new object();
+        /// <summary>
+        /// Endless for to output messages
+        /// </summary>
+        public void process_stack() {
+            try {
+                System.Threading.Tasks.Task.Factory.StartNew(() => {
+                    while (true) {
+                        try {
+                            if(Monitor.TryEnter(lockThis) == true) {
+                                // clear queue and get last message
+                                PopupInfo last_event = null;
+                                while(FIFO_Stack_Events.Count>0) {
+                                    FIFO_Stack_Events.TryDequeue(out last_event);
+                                }
+                                if(last_event!=null) {
+                                    if(Application.Current != null) {
+                                        Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
+                                        {
+                                            TrayPopupMessage popup = null;
+                                            if(last_event.e.ChangeType == WatcherChangeTypes.Deleted) {
+                                                popup = new TrayPopupMessage(last_event.e.FullPath, last_event.mi.wType.ToString() + " " + last_event.e.ChangeType.ToString(), last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
+#if(!_Evgeniy)
+                                                    TrayPopupMessage.ControlButtons.Clipboard
+#else
+                                                    TrayPopupMessage.ControlButtons.None
+#endif
+                                            );
+                                                popup.MouseDown += (sender, args) => {
+                                                    if(App.NotifyIcon.CustomBalloon != null) {
+                                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                                    }
+                                                };
+                                            } else {
+                                                popup = new TrayPopupMessage(last_event.e.FullPath, last_event.mi.wType.ToString() + " " + last_event.e.ChangeType.ToString(), last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
+#if(!_Evgeniy)
+                                            TrayPopupMessage.ControlButtons.Clipboard |
+#endif
+                                            TrayPopupMessage.ControlButtons.Run);
+
+                                                popup.MouseDown += (sender, args) => {
+                                                    if(App.NotifyIcon.CustomBalloon != null) {
+                                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                                    }
+                                                    App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                                                };
+                                            }
+                                            App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
+                                        });
+                                    }
+                                }
+                            }
+                        } catch (Exception _ex) {
+                            Console.WriteLine("_ex:" + _ex.ToString());
+                        } finally {
+                            try {
+                                Thread.Sleep(100);
+                            } catch (Exception) {
+                                //Console.WriteLine("Thread.Sleep _ex:\n" + _ex.ToString());
+                            }
+                        }
+                    }
+                });
+            } catch(Exception _ex) {
+                Console.WriteLine("Error start main for");
             }
         }
 
