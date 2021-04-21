@@ -6,7 +6,11 @@ No drivers, no spyware, no admin rights.
 
 ## Description
 
+Pop-up messages on save files, copy files, remove files or folders
+
 ![Description](markdown.images/description.png)
+
+If you do not see popup then add extensions or paths to settings of this program.
 
 This application for **Windows** XP/8/10 users only and it is just the user interface of WinAPI functions
 System.IO.FileSystemEventHandler. See documentation about WinAPI functions:

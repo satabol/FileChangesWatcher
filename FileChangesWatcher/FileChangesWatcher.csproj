@@ -573,6 +573,7 @@
     <Resource Include="markdown.images\BlenderSaveImageAndScripts.gif" />
     <Resource Include="markdown.images\SaveWordFile.gif" />
     <Resource Include="markdown.images\file.07.png" />
+    <Resource Include="markdown.images\description.png" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -590,7 +591,7 @@
     </PostBuildEventDependsOn>
     <PostBuildEvent>WHERE 7z.exe
 IF %25ERRORLEVEL%25 NEQ 0 (ECHO 7z.exe wasn't found) ELSE (
-7z.exe a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath)
+7z.exe a $(TargetDir)\$(ProjectName).@(VersionNumber).zip $(TargetPath) $(TargetDir)$(TargetName).js
 cd /d $(ProjectDir)
 7z.exe a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*
 cd /d $(TargetDir)
