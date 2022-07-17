@@ -36,6 +36,7 @@ using System.Resources;
 using SharepointSync;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Collections.Specialized;
 
 namespace FileChangesWatcher {
 
@@ -111,7 +112,9 @@ namespace FileChangesWatcher {
         }
     }
 
-    // Элементы меню для Файла/Каталога для режима CreateChangeRenameDelete
+    /// <summary>
+    /// Элементы меню для Файла/Каталога для режима CreateChangeRenameDelete
+    /// </summary>
     public class MenuItemData_CCRD : MenuItemData  // CreateChangeRenameDelete
     {
         public FileSystemEventArgs e;
@@ -150,12 +153,32 @@ namespace FileChangesWatcher {
                             if(mi_tmp != null) {
                                 switch(mi_tmp.Name) {
                                     case "mi_main":
+                                    case "mi_copy_file_to_clipboard":
+                                    case "mi_move_file_to_clipboard":
+                                    case "mi_file_delete":
                                     case "mi_enter":
                                         //mi_tmp.Background = System.Windows.Media.Brushes.DarkGray;
                                         mi_tmp.IsEnabled = bool_object_exists;
+                                        //mi_tmp.Visibility =  Visibility.Hidden;
                                         break;
                                     case "mi_clipboard":
                                         break;
+                                }
+
+                                if(bool_object_exists==false) {
+                                    switch(mi_tmp.Name) {
+                                        //case "mi_main":
+                                        case "mi_copy_file_to_clipboard":
+                                        case "mi_move_file_to_clipboard":
+                                        case "mi_file_delete":
+                                        case "mi_enter":
+                                            //mi_tmp.Background = System.Windows.Media.Brushes.DarkGray;
+                                            //mi_tmp.IsEnabled = bool_object_exists;
+                                            mi_tmp.Visibility =  Visibility.Hidden;
+                                            break;
+                                        case "mi_clipboard":
+                                            break;
+                                    }
                                 }
                             }
                         }
@@ -194,19 +217,31 @@ namespace FileChangesWatcher {
             switch(_e.ChangeType) {
                 case WatcherChangeTypes.Deleted: {
                     //string mi_text = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss Deleted ") + _e.FullPath;
-                    mi.ToolTip = "Copy to clipboard: " + _e.FullPath;
+                    mi.ToolTip = "Copy path to clipboard: " + _e.FullPath;
                     mi.Header = _dt.ToString("yyyy/MM/dd HH:mm:ss.fff") + " [" + _wType.ToString() + " " + _e.ChangeType.ToString()+"]\n    " + App.ShortText(_e.FullPath); //mi_text.Length > (menuitem_header_length * 2 + 5) ? mi_text.Substring(0, menuitem_header_length) + " ... " + mi_text.Substring(mi_text.Length - menuitem_header_length) : mi_text;
                                                                                                                                                                             // Еле-еле выставил иконку для меню программно и то без ресурса. Использовать иконку из ресурса не получается. http://www.telerik.com/forums/how-to-set-icon-from-codebehind
                     mi.Icon = new System.Windows.Controls.Image { Source = new BitmapImage(new Uri("pack://application:,,,/Icons/deleted.ico", UriKind.Absolute)) };
                     mi.Command = App.CustomRoutedCommand_CopyTextToClipboard;
                     mi.CommandParameter = _e.FullPath;
+                    mi.Foreground = System.Windows.Media.Brushes.Gray;
                 }
                 break;
                 case WatcherChangeTypes.Created:
                 case WatcherChangeTypes.Changed:
                 case WatcherChangeTypes.Renamed: {
                     mi.ToolTip = "Go to " + _e.FullPath;
-                    mi.Header = _dt.ToString("yyyy/MM/dd HH:mm:ss.fff")+ " ["+ _wType.ToString() + " " + _e.ChangeType.ToString() + "]\n    " + App.ShortText(_e.FullPath); // mi_text.Length > (menuitem_header_length * 2 + 5) ? mi_text.Substring(0, menuitem_header_length) + " ... " + mi_text.Substring(mi_text.Length - menuitem_header_length) : mi_text;
+                    string file_size = "";
+                    {
+                        FileInfo fi = new FileInfo(_e.FullPath);
+                        if(fi.Exists==true) {
+                            mi.Cursor = Cursors.Hand;
+                            NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+                            nfi.NumberGroupSeparator = " ";
+                            file_size = $"[{fi.Length.ToString("#,0", nfi)} byte]";
+                        }
+
+                    }
+                    mi.Header = _dt.ToString("yyyy/MM/dd HH:mm:ss.fff")+ " ["+ _wType.ToString() + " " + _e.ChangeType.ToString() + $"] {file_size}\n    " + App.ShortText(_e.FullPath); // mi_text.Length > (menuitem_header_length * 2 + 5) ? mi_text.Substring(0, menuitem_header_length) + " ... " + mi_text.Substring(mi_text.Length - menuitem_header_length) : mi_text;
                     if(_e.ChangeType == WatcherChangeTypes.Renamed) {
                         RenamedEventArgs _ee = (RenamedEventArgs)_e;
                         string OldFullPath = (string)AppUtility.GetInstanceField(typeof(RenamedEventArgs), _ee, "oldFullPath");
@@ -295,6 +330,18 @@ namespace FileChangesWatcher {
                         mi_clipboard.Command = App.CustomRoutedCommand_CopyTextToClipboard;
                         mi_clipboard.CommandParameter = _e.FullPath;
 
+                        MenuItem mi_copy_file_to_clipboard = (MenuItem)ct.FindName("mi_copy_file_to_clipboard", _mi);
+                        mi_copy_file_to_clipboard.Command = App.CustomRoutedCommand_CopyFileToClipboard;
+                        mi_copy_file_to_clipboard.CommandParameter = _e.FullPath;
+
+                        MenuItem mi_move_file_to_clipboard = (MenuItem)ct.FindName("mi_move_file_to_clipboard", _mi);
+                        mi_move_file_to_clipboard.Command = App.CustomRoutedCommand_MoveFileToClipboard;
+                        mi_move_file_to_clipboard.CommandParameter = _e.FullPath;
+
+                        MenuItem mi_file_delete = (MenuItem)ct.FindName("mi_file_delete", _mi);
+                        mi_file_delete.Command = App.CustomRoutedCommand_DeleteFile;
+                        mi_file_delete.CommandParameter = _e.FullPath;
+
                         MenuItem mi_enter = (MenuItem)ct.FindName("mi_enter", _mi);
                         // Если объект удалён, то нельзя его выполнить
                         // If file has removed you can't execute it or start associated application.
@@ -313,7 +360,97 @@ namespace FileChangesWatcher {
                         // Добавить кнопку для файла "Запустить файл" в правом столбце:
                         if(wType == WatchingObjectType.File) {
                             mi_enter.Visibility = Visibility.Visible;
+                            mi_copy_file_to_clipboard.Visibility = Visibility.Visible;
+                            mi_move_file_to_clipboard.Visibility = Visibility.Visible;
+                            mi_file_delete.Visibility = Visibility.Visible;
                         }
+                        
+                        // Append Drag&Drop
+                        App.NotifyIcon.ContextMenu.StaysOpen = true;
+                        mi.StaysOpenOnClick = true;
+                        App.NotifyIcon.ContextMenu.PreviewMouseWheel += (s2, a2) => {
+                        };
+                        mi.PreviewMouseRightButtonDown += (_sender, _args) => {
+                            try {
+                                ShellContextMenu scm = new ShellContextMenu();
+                                FileInfo[] files = new FileInfo[1];
+                                files[0] = new FileInfo(_e.FullPath);
+                                scm.ShowContextMenu(files, System.Windows.Forms.Cursor.Position);
+                                Thread.Sleep(2000);
+                            } catch(Exception _ex) {
+                                Console.WriteLine($"{MCodes._0001.mfem()}. PreviewMouseRightButtonDown: {_ex.Message}");
+                            }
+                        };
+                        mi.PreviewMouseLeftButtonDown += (_sender, _args) => {
+                            if(_args.LeftButton==MouseButtonState.Pressed) {
+                                MouseEventHandler evh = null;
+                                evh = (_sender0, _args0) => {
+                                    bool is_capture_mouse_set = false;
+                                    try {
+                                        mi.MouseMove -= evh;
+                                        // Есть глюк для контекстного меню NotifyIcon. Если потащить DragDrop из меню,
+                                        // и провести его над Windows Toolbar, остановить над каким-либо приложением, которое активируется
+                                        // и станет активным, то контекстное меню закрывается и процесс DragDrop
+                                        // прерывается, но делает это некорректно. Если после прерываения попытаться запустить
+                                        // контекстное меню правой кнопкой мыши, то оно самостоятельно закроется в момент открытия.
+                                        // Потом будет снова работать нормально, но эффект выглядит некрасиво.
+                                        // Поэтому в момент закрытия контекстного меню требуется остановить DragDrop по этому признаку,
+                                        // а это можно сделать только когда DragDrop поинтересуется, можно ли ему продолжать. А случится это
+                                        // в событии QueryContinueDrag. Т.е., когда App.NotifyIcon.ContextMenu.Closed срабатывает
+                                        // то выставляет признак, чтобы не обрабатывать DragDrop, а когда DragDrop вызывает событие 
+                                        // QueryContinueDrag, то тут-то я ему и сообщаю, что я в его услугах больше не нуждаюсь.
+                                        bool dragdrop_continue = true;
+                                        //DragDrop.AddQueryContinueDragHandler(mi, (_sender1, _args1) => {
+                                        //    if(dragdrop_continue==false) {
+                                        //        _args1.Action = DragAction.Cancel;
+                                        //        _args1.Handled=true;
+                                        //    }
+                                        //});
+                                        mi.QueryContinueDrag += (_sender2, _args2) => {
+                                            if(dragdrop_continue==false) {
+                                                _args2.Action = DragAction.Cancel;
+                                                _args2.Handled=true;
+                                                {
+                                                    // last chance for user - on stop drag'n'drop - open notify message
+//                                                    TrayPopupMessage popup = new TrayPopupMessage(e.FullPath, mi.Header.ToString(), _wType, App.NotifyIcon, null,
+//#if(!_Evgeniy)
+//                                                            TrayPopupMessage.ControlButtons.Clipboard |
+//#endif
+//                                                            TrayPopupMessage.ControlButtons.Run,
+//                                                            TrayPopupMessage.Type.PathCreateChangeRename
+//                                                        );
+
+//                                                    App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
+                                                }
+                                            }
+                                        };
+                                        App.NotifyIcon.ContextMenu.ContextMenuClosing += (_sender2, _args2) => {
+                                        };
+                                        App.NotifyIcon.ContextMenu.Closed += (_sender2, _args2) => {
+                                            dragdrop_continue = false;
+                                        };
+                                        App.NotifyIcon.ContextMenu.Opened += (_sender2, _args2) => {
+                                            dragdrop_continue = true;
+                                        };
+                                        mi.AllowDrop = true;
+                                        // https://stackoverflow.com/questions/3040415/drag-and-drop-to-desktop-explorer
+                                        DataObject data_object = new DataObject(DataFormats.FileDrop, new string[] { _e.FullPath }, true);
+                                        // DoDragDrop обычно закрывает меню, как только вызывается.
+                                        // Позволяет не закрывать контекстно меню в NotifyIcon в начале DoDragDrop. https://stackoverflow.com/questions/1558932/wpf-listbox-drag-drop-interferes-with-contextmenu
+                                        is_capture_mouse_set = mi.CaptureMouse();
+                                        DragDropEffects drop_res = DragDrop.DoDragDrop(mi, data_object, DragDropEffects.All);
+                                    } catch(Exception _ex) {
+                                        Debug.WriteLine($"MenuItem MouseMove. Exception: {_ex.Message}");
+                                    } finally {
+                                        if(is_capture_mouse_set==true) {
+                                            mi.ReleaseMouseCapture();
+                                        }
+                                    }
+                                };
+                                mi.MouseMove += evh;
+                            }
+                        };
+
                         mi = _mi;
                     }
                 }
@@ -322,7 +459,10 @@ namespace FileChangesWatcher {
         }
     }
 
-    // Элемент меню для записи Log (для отображения при нажатии текстого сообщения)
+
+    /// <summary>
+    /// Элемент меню для записи Log (для отображения при нажатии текстого сообщения)
+    /// </summary>
     public class MenuItemData_Log : MenuItemData  // Rename
     {
         public string log_record_text;
@@ -351,8 +491,12 @@ namespace FileChangesWatcher {
         // Добавление пользовательских меню выполнено на основе: https://msdn.microsoft.com/ru-ru/library/ms752070%28v=vs.110%29.aspx?f=255&MSPPError=-2147217396
 
         public App() {
+            //windowTestDragDrop = new WindowTestDragDrop();
+            //windowTestDragDrop.Show();
             process_stack();
         }
+
+        public static WindowTestDragDrop windowTestDragDrop = null;
 
         // Классификация элементов контекстного меню с файловыми операциями:
         enum ContextMenu_Group_Names {
@@ -398,9 +542,90 @@ namespace FileChangesWatcher {
         /// Copy text to clipboard
         /// </summary>
         public static RoutedCommand CustomRoutedCommand_CopyTextToClipboard = new RoutedCommand();
+        public static RoutedCommand CustomRoutedCommand_CopyFileToClipboard = new RoutedCommand();
+        public static RoutedCommand CustomRoutedCommand_MoveFileToClipboard = new RoutedCommand();
+        public static RoutedCommand CustomRoutedCommand_DeleteFile= new RoutedCommand();
         private void ExecutedCustomCommand_CopyTextToClipboard(object sender, ExecutedRoutedEventArgs e) {
-            String text = (string)e.Parameter;
-            copy_clipboard_with_popup(text);
+            try {
+                String text = (string)e.Parameter;
+                copy_clipboard_with_popup(text);
+            } catch(Exception _ex) { 
+            }
+        }
+
+        private void ExecutedCustomCommand_CopyFileToClipboard(object sender, ExecutedRoutedEventArgs e) {
+            bool res = false;
+            try {
+                StringCollection paths = new StringCollection();
+                String path = (string)e.Parameter;
+                if(File.Exists(path)==true) {
+                    paths.Add(path);
+                    Clipboard.SetFileDropList(paths);
+                    res = true;
+                }
+                //App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "File copied into a clipboard", BalloonIcon.Info);
+            }catch(Exception _ex) {
+
+            }
+        }
+
+        private void ExecutedCustomCommand_MoveFileToClipboard(object sender, ExecutedRoutedEventArgs e) {
+            try {
+                String path = (string)e.Parameter;
+                if(File.Exists(path)==true) {
+                    // https://stackoverflow.com/questions/2077981/cut-files-to-clipboard-in-c-sharp
+                    StringCollection files = new StringCollection();
+                    files.Add(path);
+
+                    byte[] moveEffect = new byte[] { 2, 0, 0, 0 };
+                    MemoryStream dropEffect = new MemoryStream();
+                    dropEffect.Write(moveEffect, 0, moveEffect.Length);
+
+                    DataObject data = new DataObject();
+                    data.SetFileDropList(files);
+                    data.SetData("Preferred DropEffect", dropEffect);
+
+                    Clipboard.Clear();
+                    Clipboard.SetDataObject(data, true);
+                }
+                //App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "File copied into a clipboard", BalloonIcon.Info);
+            }catch(Exception _ex) {
+
+            }
+        }
+
+        public static void MoveFileToClipboard(string path) {
+            if(File.Exists(path)==true) {
+                // https://stackoverflow.com/questions/2077981/cut-files-to-clipboard-in-c-sharp
+                StringCollection files = new StringCollection();
+                files.Add(path);
+
+                byte[] moveEffect = new byte[] { 2, 0, 0, 0 };
+                MemoryStream dropEffect = new MemoryStream();
+                dropEffect.Write(moveEffect, 0, moveEffect.Length);
+
+                DataObject data = new DataObject();
+                data.SetFileDropList(files);
+                data.SetData("Preferred DropEffect", dropEffect);
+
+                Clipboard.Clear();
+                Clipboard.SetDataObject(data, true);
+            }
+        }
+
+        private void ExecutedCustomCommand_DeleteFile(object sender, ExecutedRoutedEventArgs e) {
+            bool res = false;
+            try {
+                StringCollection paths = new StringCollection();
+                String path = (string)e.Parameter;
+                if(File.Exists(path)==true) {
+                    File.Delete(path);
+                    res = true;
+                }
+                //App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "File copied into a clipboard", BalloonIcon.Info);
+            }catch(Exception _ex) {
+
+            }
         }
 
         public static void copy_clipboard_with_popup(string text) {
@@ -617,13 +842,22 @@ namespace FileChangesWatcher {
 
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
 
+            /*
+            not fired. Look: https://stackoverflow.com/questions/5139691/wpf-scroll-without-focus
             _notifyIcon.MouseWheel+= (sender, args) => {
                 _notifyIcon.ContextMenu.IsOpen = true;
             };
+            _notifyIcon.ContextMenu.MouseWheel+=(sender, args) => {
+                int x=0;
+            };
+            */
 
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ExecuteFile, ExecutedCustomCommand_ExecuteFile, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_CopyTextToClipboard, ExecutedCustomCommand_CopyTextToClipboard, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_CopyFileToClipboard, ExecutedCustomCommand_CopyFileToClipboard, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_MoveFileToClipboard, ExecutedCustomCommand_MoveFileToClipboard, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DeleteFile, ExecutedCustomCommand_DeleteFile, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DialogListingDeletedFiles, ExecutedCustomCommand_DialogListingDeletedFiles, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ShowMessage, ExecutedCustomCommand_ShowMessage, CanExecuteCustomCommand));
 
@@ -681,11 +915,12 @@ namespace FileChangesWatcher {
 
         public static String getLogFileName() {
             DateTime n = DateTime.Now;
-            string year = n.Year.ToString();
-            string month = (n.Month < 10 ? "0" : "") + n.Month.ToString();
-            string day = (n.Day< 10 ? "0" : "") + n.Day.ToString();
+            //string year = n.Year.ToString();
+            //string month = (n.Month < 10 ? "0" : "") + n.Month.ToString();
+            //string day = (n.Day< 10 ? "0" : "") + n.Day.ToString();
             //string str_path = Settings.string_log_path + "\\" + Settings.string_log_file_prefix + ""+year+"."+month+"."+day+".log";
-            string str_path = System.IO.Path.Combine(Settings.string_log_path, Settings.string_log_file_prefix, $"{year}.{month}.{day}.log");
+            //string str_path = System.IO.Path.Combine(Settings.string_log_path, Settings.string_log_file_prefix, $"{year}.{month}.{day}.log");
+            string str_path = System.IO.Path.Combine(Settings.string_log_path, Settings.string_log_file_prefix, $"{n.ToString("yyyy.MM.dd")}.log");
             return str_path;
         }
 
@@ -977,8 +1212,8 @@ namespace FileChangesWatcher {
                     jUserExtensions.Add(new JObject(new JProperty("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf")));
                     jUserExtensions.Add(new JObject(new JProperty("visual_studio", ".csproj|.sln")));
                     jUserExtensions.Add(new JObject(new JProperty("blender", ".blend[0-9]*|.py")));
-                    jUserExtensions.Add(new JObject(new JProperty("other", ".svg|.xaml|.[0-9]+|.ifc|.obj")));
-                    jUserExtensions.Add(new JObject(new JProperty("other1", ".bmp|.gif|.jpg|.jpeg|.tiff|.tif|.js|.cs|.java|.exe|.dwg|.dxf|.rar")));
+                    jUserExtensions.Add(new JObject(new JProperty("other", ".svg|.xaml|.[0-9]+|.ifc|.obj|.exe|.com|.dll")));
+                    jUserExtensions.Add(new JObject(new JProperty("other1", ".bmp|.gif|.jpg|.jpeg|.tiff|.tif|.js|.cs|.java|.exe|.dwg|.dxf|.rar|.mp4|.avi|.png")));
                 }
 
                 {
@@ -1001,7 +1236,8 @@ namespace FileChangesWatcher {
                 }
                 File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(jsonData, Newtonsoft.Json.Formatting.Indented));
             } else {
-                _notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
+                //_notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
+                _notifyIcon.ToolTipText = $"FileChangesWatcher {Assembly.GetExecutingAssembly().GetName().Version.ToString()}. Right-click for menu";
                 try {
                     jsonData = JObject.Parse(File.ReadAllText(jsonFilePath));
                     _notifyIcon.IconSource = new BitmapImage(new Uri("pack://application:,,,/Icons/FileChangesWatcher.ico", UriKind.Absolute));
@@ -1017,21 +1253,24 @@ namespace FileChangesWatcher {
                 // Определить количество пунктов подменю:
                 Settings.log_contextmenu_size = Convert.ToInt32(jsonData["General"]["log_contextmenu_size"]);
             } catch(Exception _ex) {
-                Console.WriteLine("Ошибка преобразования значения log_contextmenu_size в число. \n"+_ex.ToString());
+                //Console.WriteLine("Ошибка преобразования значения log_contextmenu_size в число. \n"+_ex.ToString());
+                Console.WriteLine("Error convert log_contextmenu_size into bool. Check it is exists and has true/false value: \n"+_ex.ToString());
             }
 
             try {
                 // Активировать ли систему вывода уведомлений (true/false):
                 Settings.bool_display_notifications = Convert.ToBoolean(jsonData["General"]["display_notifications"]);
             } catch(Exception ex) {
-                Console.WriteLine("Ошибка преобразования значения display_notifications в bool. Либо не указано, либо указано не true/false " + ex.Message);
+                //Console.WriteLine("Ошибка преобразования значения display_notifications в bool. Либо не указано, либо указано не true/false " + ex.Message);
+                Console.WriteLine("Error convert display_notifications into bool. Check it is exists and has true/false value" + ex.Message);
             }
 
             try {
                 // Активировать ли систему логирования (true/false):
                 Settings.bool_log = Convert.ToBoolean(jsonData["General"]["log"]);
             } catch(Exception ex) {
-                Console.WriteLine("Ошибка преобразования значения log в bool. Либо не указано, либо указано не true/false "+ex.Message);
+                //Console.WriteLine("Ошибка преобразования значения log в bool. Либо не указано, либо указано не true/false "+ex.Message);
+                Console.WriteLine("Error convert log into bool. Check it is exists and has true/false value "+ex.Message);
             }
 
             try {
@@ -1048,14 +1287,16 @@ namespace FileChangesWatcher {
                     }
                 }
             } catch(Exception ex) {
-                Console.WriteLine("Неверный параметр log_path. " + ex.Message);
+                //Console.WriteLine("Неверный параметр log_path. " + ex.Message);
+                Console.WriteLine("Error parameter log_path. " + ex.Message);
             }
 
             try {
                 // Префикс файла логов (чтобы не путать с файлами других программ, которые могут писать в общую сетевую папку):
                 Settings.string_log_file_prefix = Convert.ToString(jsonData["General"]["log_file_prefix"]);
             } catch(Exception ex) {
-                Console.WriteLine("Ошибка чтения параметра log_file_prefix: " + ex.Message);
+                //Console.WriteLine("Ошибка чтения параметра log_file_prefix: " + ex.Message);
+                Console.WriteLine("Error param log_file_prefix: " + ex.Message);
             }
 
             _re_extensions = getExtensionsRegEx(jsonData, new string[] { "Extensions", "UserExtensions" });
@@ -1143,13 +1384,15 @@ namespace FileChangesWatcher {
             appendLogToDictionary("Initial settings.\n"+init_text_message.ToString(), BalloonIcon.Info);
 
             if(Settings.bool_display_notifications == true) {
-                TrayPopupMessage popup = new TrayPopupMessage("Initial settings.\n" + init_text_message.ToString(), "Initial initialization", WatchingObjectType.File, App.NotifyIcon, null, TrayPopupMessage.ControlButtons.Clipboard);
-                popup.MouseDown += (sender, args) => {
-                    if(App.NotifyIcon.CustomBalloon != null) {
-                        App.NotifyIcon.CustomBalloon.IsOpen = false;
-                    }
-                    App.ShowMessage("Initial settings.\n" + init_text_message.ToString());
-                };
+                string text = $"Initial settings.\nVersion: {Assembly.GetExecutingAssembly().GetName().Version.ToString()}\n{init_text_message.ToString()}";
+                TrayPopupMessage popup = new TrayPopupMessage(text, "Initial initialization", WatchingObjectType.File, App.NotifyIcon, null, TrayPopupMessage.ControlButtons.Clipboard_Text, TrayPopupMessage.Type.Text);
+                //popup.MouseDown += (sender, args) => {
+                //    if(App.NotifyIcon.CustomBalloon != null) {
+                //        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                //    }
+                //    //App.ShowMessage("Initial settings.\n" + init_text_message.ToString());
+                //    App.ShowMessage(text);
+                //};
                 App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
             }
         }
@@ -1327,7 +1570,7 @@ namespace FileChangesWatcher {
             }
         }
 
-        public class Settings {
+        public static class Settings {
             // Список каталогов, которые надо исключить из вывода:
             public static List<string> arr_folders_for_exceptions = null;
             public static List<string> arr_files_for_exceptions = null;
@@ -1348,7 +1591,6 @@ namespace FileChangesWatcher {
         }
 
 
-        // Если _old_path!=null, то надо переименовать имеющиеся пути с _old_path на _path
         private static int menuitem_header_length = 30;
 
         public static void customballoon_close(object sender, ElapsedEventArgs e) {
@@ -1601,35 +1843,94 @@ namespace FileChangesWatcher {
                                     if(Application.Current != null) {
                                         Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
                                         {
-                                            TrayPopupMessage popup = null;
-                                            if(last_event.e.ChangeType == WatcherChangeTypes.Deleted) {
-                                                popup = new TrayPopupMessage(last_event.e.FullPath, last_event.mi.wType.ToString() + " " + last_event.e.ChangeType.ToString(), last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
-#if(!_Evgeniy)
-                                                    TrayPopupMessage.ControlButtons.Clipboard
+                                            try {
+                                                TrayPopupMessage popup = null;
+                                                if (last_event.e.ChangeType == WatcherChangeTypes.Deleted) {
+                                                    popup = new TrayPopupMessage(last_event.e.FullPath, last_event.mi.wType.ToString() + " " + last_event.e.ChangeType.ToString(), last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
+#if (!_Evgeniy)
+                                                    TrayPopupMessage.ControlButtons.Clipboard_Text,
 #else
-                                                    TrayPopupMessage.ControlButtons.None
+                                                    TrayPopupMessage.ControlButtons.None,
 #endif
-                                            );
-                                                popup.MouseDown += (sender, args) => {
-                                                    if(App.NotifyIcon.CustomBalloon != null) {
-                                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
-                                                    }
-                                                };
-                                            } else {
-                                                popup = new TrayPopupMessage(last_event.e.FullPath, last_event.mi.wType.ToString() + " " + last_event.e.ChangeType.ToString(), last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
-#if(!_Evgeniy)
-                                            TrayPopupMessage.ControlButtons.Clipboard |
-#endif
-                                            TrayPopupMessage.ControlButtons.Run);
+                                                    TrayPopupMessage.Type.PathDelete
+                                                    );
+                                                    //popup.MouseDown += (sender, args) => {
+                                                    //    if(App.NotifyIcon.CustomBalloon != null) {
+                                                    //        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                                    //    }
+                                                    //};
+                                                } else {
+                                                    string ext_text = "";
+                                                    if (last_event.mi is MenuItemData_CCRD) {
 
-                                                popup.MouseDown += (sender, args) => {
-                                                    if(App.NotifyIcon.CustomBalloon != null) {
-                                                        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                                        if (((MenuItemData_CCRD)last_event.mi).wType==WatchingObjectType.File) {
+                                                            if (File.Exists(last_event.e.FullPath)==true) {
+                                                                FileInfo fi = new FileInfo(last_event.e.FullPath);
+                                                                NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+                                                                nfi.NumberGroupSeparator = " ";
+                                                                // Иногда файл успевает удалиться, не смотря на проверку условия File.Exists. ))) Редко но бывает. Поэтому этот поток завёрнут в try/catch.
+                                                                ext_text = fi.Length.ToString("#,0", nfi);
+                                                            }
+
+                                                        }
                                                     }
-                                                    App.gotoPathByWindowsExplorer(popup.path, popup.wType);
-                                                };
+                                                    popup = new TrayPopupMessage(last_event.e.FullPath, $"{last_event.mi.wType.ToString()} {last_event.e.ChangeType.ToString()} [size: {ext_text} byte]", last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
+#if (!_Evgeniy)
+                                                    TrayPopupMessage.ControlButtons.Clipboard_Text |
+#endif
+                                                    TrayPopupMessage.ControlButtons.Clipboard_File | TrayPopupMessage.ControlButtons.File_Run | TrayPopupMessage.ControlButtons.File_Delete,
+                                                        TrayPopupMessage.Type.PathCreateChangeRename
+                                                        );
+
+                                                    //popup.MouseDown += (sender, args) => {
+                                                    //    MouseEventHandler evh = null;
+                                                    //    string start_textMessage = popup.TextMessage;
+                                                    //    evh = (_sender, _args) => {
+                                                    //        if(_args.LeftButton==MouseButtonState.Pressed) {
+                                                    //            popup.MouseMove -= evh;
+                                                    //            //popup.AllowDrop = true;
+                                                    //            popup.TextMessage = $"{start_textMessage}\nDrag and drop this file to application";
+                                                    //            try {
+                                                    //                popup.IsDragging = true;
+                                                    //                //bool cm = popup.CaptureMouse();
+                                                    //                // https://stackoverflow.com/questions/3040415/drag-and-drop-to-desktop-explorer
+                                                    //                DragDropEffects drop_res = DragDrop.DoDragDrop(popup, new DataObject(DataFormats.FileDrop, new string[]{ popup.path }), DragDropEffects.Copy );
+                                                    //                Debug.WriteLine($"Drop result: {drop_res.ToString()}");
+                                                    //                popup.RestartTimeoutTimer();
+                                                    //                popup.TextMessage = start_textMessage;
+                                                    //            }catch(Exception _ex) {
+                                                    //            } finally {
+                                                    //                popup.IsDragging = false;
+                                                    //                //popup.ReleaseMouseCapture();
+                                                    //            }
+                                                    //        }
+                                                    //    };
+                                                    //    popup.MouseMove += evh;
+                                                    //    popup.Drop += (_sender1, _args1) => {
+                                                    //        //App.NotifyIcon.ResetBalloonCloseTimer
+                                                    //        popup.TextMessage = start_textMessage;
+                                                    //    };
+                                                    //};
+                                                    //popup.MouseUp += (sender, args) => {
+                                                    //    if(App.NotifyIcon.CustomBalloon != null) {
+                                                    //        App.NotifyIcon.CustomBalloon.IsOpen = false;
+                                                    //    }
+                                                    //    App.gotoPathByWindowsExplorer(popup.path, popup.wType);
+                                                    //};
+                                                }
+
+                                                // Может вылететь, если происходит перезагрузка эксплорера и toolbar отсутствует. Программа после такого исключения вылетает,
+                                                // не знаю, почему не ловит try/catch, в который она обёрнута.
+                                                App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
+                                            } catch (Exception _ex) {
+                                                Console.WriteLine("_ex:" + _ex.ToString());
+                                            } finally {
+                                                try {
+                                                    Thread.Sleep(100);
+                                                } catch (Exception) {
+                                                    //Console.WriteLine("Thread.Sleep _ex:\n" + _ex.ToString());
+                                                }
                                             }
-                                            App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
                                         });
                                     }
                                 }

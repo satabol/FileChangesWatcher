@@ -1,0 +1,22 @@
+﻿<Window x:Class="FileChangesWatcher.WindowTestDragDrop"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FileChangesWatcher"
+        mc:Ignorable="d"
+        Title="WindowTestDragDrop" Height="450" Width="800" MouseDown="event_MouseDown" Drop="window_DropEvent">
+    <Grid>
+        <StackPanel Orientation="Vertical">
+            <Menu Height="25" VerticalAlignment="Top">
+                <MenuItem Header="MenuItem" Height="20">
+                    <MenuItem Header="MenuItem" Height="20"/>
+                    <MenuItem Header="MenuItem" Height="20"/>
+                    <MenuItem Header="DragDrop menu item" Height="20" StaysOpenOnClick="True" PreviewMouseDown="dropmenuitem_OnMouseDown"/>
+                </MenuItem>
+            </Menu>
+            <TextBlock Text="{Binding Path=FileName,UpdateSourceTrigger=PropertyChanged}" ForceCursor="true" Cursor="Hand"></TextBlock>
+        </StackPanel>
+
+    </Grid>
+</Window>

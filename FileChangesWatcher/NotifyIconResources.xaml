@@ -107,6 +107,7 @@
                     <Image Source="/Icons/FileChangesWatcher.16x16.ico" Width="16" Height="16"/>
                 </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="TestDragDrop" Command="{Binding OpenWindowTestDragDrop}"/>
 
 
         </MenuItem>

@@ -321,9 +321,8 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SharpShell, Version=2.2.0.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\SharpShell.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="SharpShell, Version=2.7.2.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpShell.2.7.2\lib\net40-client\SharpShell.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing">
@@ -389,6 +388,7 @@
     <Compile Include="MainStandalone.cs" />
     <Compile Include="markdown\Markdown.cs" />
     <Compile Include="markdown\TextToFlowDocumentConverter.cs" />
+    <Compile Include="MCodes.cs" />
     <Compile Include="MenuItemFileForTrayContextMenu.xaml.cs">
       <DependentUpon>MenuItemFileForTrayContextMenu.xaml</DependentUpon>
     </Compile>
@@ -407,6 +407,9 @@
     <Compile Include="AppUtility.cs" />
     <Compile Include="WebBrowserDialog.xaml.cs">
       <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="WindowTestDragDrop.xaml.cs">
+      <DependentUpon>WindowTestDragDrop.xaml</DependentUpon>
     </Compile>
     <Page Include="About.xaml">
       <SubType>Designer</SubType>
@@ -442,6 +445,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WebBrowserDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="WindowTestDragDrop.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -554,6 +561,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ShellConextMenu.cs" />
     <Resource Include="Icons\Enter.ico" />
     <Resource Include="Icons\Clipboard.ico" />
     <Resource Include="Icons\close.ico" />
@@ -574,6 +582,9 @@
     <Resource Include="markdown.images\SaveWordFile.gif" />
     <Resource Include="markdown.images\file.07.png" />
     <Resource Include="markdown.images\description.png" />
+    <Resource Include="Icons\Clipboard_Copy_File.ico" />
+    <Resource Include="Icons\trash.ico" />
+    <Resource Include="Icons\Clipboard_Move_File.ico" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -595,7 +606,7 @@ IF %25ERRORLEVEL%25 NEQ 0 (ECHO 7z.exe wasn't found) ELSE (
 cd /d $(ProjectDir)
 7z.exe a -r -xr!bin -xr!obj -xr!.git -xr!.vs $(TargetDir)\$(ProjectName).@(VersionNumber).src.zip *.*
 cd /d $(TargetDir)
-explorer.exe /select,"$(TargetDir)$(ProjectName).@(VersionNumber).zip"
+rem explorer.exe /select,"$(TargetDir)$(ProjectName).@(VersionNumber).zip"
 )
 exit 0</PostBuildEvent>
   </PropertyGroup>

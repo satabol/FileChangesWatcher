@@ -20,13 +20,30 @@
                         <ColumnDefinition Width='*'/>
                         <ColumnDefinition Width='20'/>
                         <ColumnDefinition Width='20'/>
+                        <ColumnDefinition Width='20'/>
+                        <ColumnDefinition Width='20'/>
                     </Grid.ColumnDefinitions>
                     <MenuItem Grid.Column="1" ToolTip="Copy path to clipboard"   x:Name="mi_clipboard"   Visibility="Collapsed">
                         <MenuItem.Icon>
                             <Image Source="Icons/Clipboard.ico"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Grid.Column="2" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
+                    <MenuItem Grid.Column="2" ToolTip="Copy file to clipboard"   x:Name="mi_copy_file_to_clipboard"   Visibility="Collapsed">
+                        <MenuItem.Icon>
+                            <Image Source="Icons/Clipboard_Copy_File.ico"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Grid.Column="3" ToolTip="Move file to clipboard"   x:Name="mi_move_file_to_clipboard"   Visibility="Collapsed">
+                        <MenuItem.Icon>
+                            <Image Source="Icons/Clipboard_Move_File.ico"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Grid.Column="4" ToolTip="Delete file"   x:Name="mi_file_delete"   Visibility="Collapsed">
+                        <MenuItem.Icon>
+                            <Image Source="Icons/trash.ico"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Grid.Column="5" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
                         <MenuItem.Icon>
                             <Image Source="Icons/Enter.ico"/>
                         </MenuItem.Icon>

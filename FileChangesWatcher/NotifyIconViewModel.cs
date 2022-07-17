@@ -176,6 +176,20 @@ namespace FileChangesWatcher
                 };
             }
         }
+        public ICommand OpenWindowTestDragDrop{
+            get {
+                return new DelegateCommand {
+                    CommandAction = () => {
+                        if(App.windowTestDragDrop!=null) {
+                            App.windowTestDragDrop.Close();
+                        }
+                        App.windowTestDragDrop = new WindowTestDragDrop();
+                        App.windowTestDragDrop.Show();
+                    },
+                    CanExecuteFunc = () => true
+                };
+            }
+        }
 
         public ICommand OpenHomePage
         {

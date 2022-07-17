@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300"
+             d:DesignHeight="170" d:DesignWidth="440"
              HorizontalAlignment="Right"
              VerticalAlignment="Bottom" BorderThickness="2" Cursor="Hand" Margin="0" Background="#CC00ABD1" BorderBrush="#FFFFB900"
              >
@@ -15,7 +15,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20"/>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="20"/>
             <ColumnDefinition Width="20"/>
             <ColumnDefinition Width="20"/>
@@ -23,19 +23,106 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="20"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
         <Image Grid.Column="0" Grid.Row="0" Source="Icons/FileChangesWatcher.ico"></Image>
         <TextBlock Grid.Column="1" Grid.Row="0" x:Name="title" Foreground="White" MaxWidth="300" HorizontalAlignment="Stretch" TextWrapping="Wrap" Padding="0" FontSize="14" Background="#FF00C158" FontWeight="Bold">Go to object:</TextBlock>
-        <Button    Grid.Column="2" Grid.Row="0" x:Name="btn_copy_clipboard" ToolTip="Copy to clipboard" Width="20">
+        <Button    Grid.Column="2" Grid.Row="0" 
+                   ToolTip="Copy to clipboard" Width="20"
+                   Click="Button_Copy_Path_To_Clipboard_Click"
+                   Visibility="{Binding Path=Btn_Copy_Path_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                   >
             <Image Source="Icons/Clipboard.ico" Width="20"></Image>
         </Button>
-        <Button Grid.Column="3" Grid.Row="0" ToolTip="Execute file" x:Name="btn_execute_file" Width="20">
+        <Button Grid.Column="3" Grid.Row="0"
+                ToolTip="Execute file"
+                Width="20"
+                Visibility="{Binding Path=Button_Copy_File_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                Click="Button_Execute_File_Click"
+                >
             <Image Source="Icons/Enter.ico" Width="20"></Image>
         </Button>
-        <Button Grid.Column="4" Grid.Row="0" ToolTip="Close popup" x:Name="btn_close_window" Width="20" Click="btn_close_window_Click">
+        <Button Grid.Column="4"
+                Grid.Row="0"
+                ToolTip="Close popup"
+                Width="20"
+                Click="Button_Close_Window_Click"
+                >
             <Image Source="Icons/close.ico" Width="20"></Image>
         </Button>
         <Image Grid.Column="0" Grid.Row="1" Width="20" x:Name="item_image" VerticalAlignment="Top" Margin="0,5,0,0"></Image>
         <TextBlock Grid.Column="1" Grid.Row="1" x:Name="text_message" MinHeight="100" MinWidth="200" Foreground="White" MaxWidth="300" HorizontalAlignment="Center" VerticalAlignment="top" TextWrapping="Wrap" Padding="5" FontSize="14">test</TextBlock>
-    </Grid> 
+
+        <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="5">
+
+            <Button ToolTip="Copy File Path to clipboard"
+                    Width="120"
+                    Visibility="{Binding Path=Btn_Copy_Path_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Copy_Path_To_Clipboard_Click"
+                    Foreground="{Binding Path=Button_Copy_Path_To_Clipboard_Color,UpdateSourceTrigger=PropertyChanged}"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/Clipboard.ico" Width="20"></Image>
+                    <TextBlock>path to clipboard</TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button ToolTip="Copy File to Clipboard"
+                    Width="80"
+                    Visibility="{Binding Path=Button_Copy_File_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Foreground="{Binding Path=Button_Copy_File_To_Clipboard_Color,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Copy_File_To_Clipboard_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/Clipboard_Copy_File.ico" Width="20"></Image>
+                    <TextBlock>Copy file</TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button ToolTip="Move File to Clipboard"
+                    Width="80"
+                    Visibility="{Binding Path=Button_Move_File_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Foreground="{Binding Path=Button_Move_File_To_Clipboard_Color,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Move_File_To_Clipboard_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/Clipboard_Move_File.ico" Width="20"></Image>
+                    <TextBlock>Move file</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button ToolTip="Execute File"
+                    Width="70"
+                    Visibility="{Binding Path=Button_Copy_File_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Execute_File_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/Enter.ico" Width="20"></Image>
+                    <TextBlock>Execute</TextBlock>
+                </StackPanel>
+            </Button>
+            <Button ToolTip="Delete File without trash"
+                    Width="70"
+                    Visibility="{Binding Path=Button_Delete_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Delete_File_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/deleted.ico" Width="20"></Image>
+                    <TextBlock>Remove</TextBlock>
+                </StackPanel>
+            </Button>
+            <!--
+            <Button ToolTip="Delete File To Trash"
+                    Width="70"
+                    Visibility="{Binding Path=Button_Delete_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_Delete_File_To_Trash_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="Icons/trash.ico" Width="20"></Image>
+                    <TextBlock>Trash</TextBlock>
+                </StackPanel>
+            </Button>
+            -->
+        </StackPanel>
+
+    </Grid>
 </UserControl>
