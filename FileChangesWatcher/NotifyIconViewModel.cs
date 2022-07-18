@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-using System.Net.Http;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -331,15 +330,6 @@ namespace FileChangesWatcher
                     CanExecuteFunc = () => true
                 };
             }
-        }
-
-        private static void ShowWebBrowser(object sender, DoWorkEventArgs e)
-        {
-            WebBrowserDialog browser = new WebBrowserDialog();
-            browser.webBrowser.Refresh(true);
-            browser.webBrowser.NavigateToString("<!DOCTYPE html><html><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"/><body>Hello!!!<br/><br/>"+
-                                                "<hr/><button>start explorer.exe</button><br/><hr/></body></html>");
-            browser.Show();
         }
 
         public ICommand ExitApplicationCommand

@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="170" d:DesignWidth="440"
+             d:DesignHeight="170" d:DesignWidth="460"
              HorizontalAlignment="Right"
              VerticalAlignment="Bottom" BorderThickness="2" Cursor="Hand" Margin="0" Background="#CC00ABD1" BorderBrush="#FFFFB900"
              >
@@ -90,9 +90,21 @@
                     <TextBlock>Move file</TextBlock>
                 </StackPanel>
             </Button>
+
+            <Button ToolTip="ZIP File and Copy to Clipboard"
+                    Width="30"
+                    Visibility="{Binding Path=Button_ZIP_File_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Foreground="{Binding Path=Button_ZIP_File_Color,UpdateSourceTrigger=PropertyChanged}"
+                    Click="Button_ZIP_File_To_Clipboard_Click"
+                    >
+                <StackPanel Orientation="Horizontal">
+                    <!--<Image Source="Icons/Clipboard_Move_File.ico" Width="20"></Image>-->
+                    <TextBlock>ZIP</TextBlock>
+                </StackPanel>
+            </Button>
             <Button ToolTip="Execute File"
                     Width="70"
-                    Visibility="{Binding Path=Button_Copy_File_To_Clipboard_Visibility,UpdateSourceTrigger=PropertyChanged}"
+                    Visibility="{Binding Path=Button_Execute_Visibility,UpdateSourceTrigger=PropertyChanged}"
                     Click="Button_Execute_File_Click"
                     >
                 <StackPanel Orientation="Horizontal">

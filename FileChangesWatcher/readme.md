@@ -1,3 +1,7 @@
+## Legacy Information
+
+For DotNet 4.0 see branch dot_net_4.0
+
 ## Download
 
 https://sourceforge.net/projects/filechangeswatcher/files/

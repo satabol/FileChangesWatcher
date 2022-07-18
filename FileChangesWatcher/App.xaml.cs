@@ -155,6 +155,7 @@ namespace FileChangesWatcher {
                                     case "mi_main":
                                     case "mi_copy_file_to_clipboard":
                                     case "mi_move_file_to_clipboard":
+                                    case "mi_zip_file":
                                     case "mi_file_delete":
                                     case "mi_enter":
                                         //mi_tmp.Background = System.Windows.Media.Brushes.DarkGray;
@@ -163,13 +164,20 @@ namespace FileChangesWatcher {
                                         break;
                                     case "mi_clipboard":
                                         break;
+                                    default: {
+#if (DEBUG)
+                                            Console.WriteLine($"{MCodes._0020.mfem()}. {nameof(CheckPath)}. {mi_tmp.Name}, bool_object_exists={bool_object_exists}. Не забыл ли добавить обработчик меню?");
+#endif
+                                            break;
+                                        }
                                 }
 
-                                if(bool_object_exists==false) {
+                                if (bool_object_exists==false) {
                                     switch(mi_tmp.Name) {
                                         //case "mi_main":
                                         case "mi_copy_file_to_clipboard":
                                         case "mi_move_file_to_clipboard":
+                                        case "mi_zip_file":
                                         case "mi_file_delete":
                                         case "mi_enter":
                                             //mi_tmp.Background = System.Windows.Media.Brushes.DarkGray;
@@ -178,6 +186,12 @@ namespace FileChangesWatcher {
                                             break;
                                         case "mi_clipboard":
                                             break;
+                                        default: {
+#if (DEBUG)
+                                                Console.WriteLine($"{MCodes._0019.mfem()}. {nameof(CheckPath)}. {mi_tmp.Name}, bool_object_exists={bool_object_exists}. Не забыл ли добавить обработчик меню?");
+#endif
+                                                break;
+                                            }
                                     }
                                 }
                             }
@@ -338,6 +352,10 @@ namespace FileChangesWatcher {
                         mi_move_file_to_clipboard.Command = App.CustomRoutedCommand_MoveFileToClipboard;
                         mi_move_file_to_clipboard.CommandParameter = _e.FullPath;
 
+                        MenuItem mi_zip_file = (MenuItem)ct.FindName("mi_zip_file", _mi);
+                        mi_zip_file.Command = App.CustomRoutedCommand_ZipFile;
+                        mi_zip_file.CommandParameter = _e.FullPath;
+
                         MenuItem mi_file_delete = (MenuItem)ct.FindName("mi_file_delete", _mi);
                         mi_file_delete.Command = App.CustomRoutedCommand_DeleteFile;
                         mi_file_delete.CommandParameter = _e.FullPath;
@@ -359,10 +377,11 @@ namespace FileChangesWatcher {
 #endif
                         // Добавить кнопку для файла "Запустить файл" в правом столбце:
                         if(wType == WatchingObjectType.File) {
-                            mi_enter.Visibility = Visibility.Visible;
+                            mi_enter.Visibility                  = Visibility.Visible;
                             mi_copy_file_to_clipboard.Visibility = Visibility.Visible;
                             mi_move_file_to_clipboard.Visibility = Visibility.Visible;
-                            mi_file_delete.Visibility = Visibility.Visible;
+                            mi_zip_file.Visibility               = Visibility.Visible;
+                            mi_file_delete.Visibility            = Visibility.Visible;
                         }
                         
                         // Append Drag&Drop
@@ -544,6 +563,7 @@ namespace FileChangesWatcher {
         public static RoutedCommand CustomRoutedCommand_CopyTextToClipboard = new RoutedCommand();
         public static RoutedCommand CustomRoutedCommand_CopyFileToClipboard = new RoutedCommand();
         public static RoutedCommand CustomRoutedCommand_MoveFileToClipboard = new RoutedCommand();
+        public static RoutedCommand CustomRoutedCommand_ZipFile = new RoutedCommand();
         public static RoutedCommand CustomRoutedCommand_DeleteFile= new RoutedCommand();
         private void ExecutedCustomCommand_CopyTextToClipboard(object sender, ExecutedRoutedEventArgs e) {
             try {
@@ -557,7 +577,7 @@ namespace FileChangesWatcher {
             bool res = false;
             try {
                 StringCollection paths = new StringCollection();
-                String path = (string)e.Parameter;
+                string path = (string)e.Parameter;
                 if(File.Exists(path)==true) {
                     paths.Add(path);
                     Clipboard.SetFileDropList(paths);
@@ -571,7 +591,7 @@ namespace FileChangesWatcher {
 
         private void ExecutedCustomCommand_MoveFileToClipboard(object sender, ExecutedRoutedEventArgs e) {
             try {
-                String path = (string)e.Parameter;
+                string path = (string)e.Parameter;
                 if(File.Exists(path)==true) {
                     // https://stackoverflow.com/questions/2077981/cut-files-to-clipboard-in-c-sharp
                     StringCollection files = new StringCollection();
@@ -590,6 +610,33 @@ namespace FileChangesWatcher {
                 }
                 //App.NotifyIcon.ShowBalloonTip("FileChangesWatcher", "File copied into a clipboard", BalloonIcon.Info);
             }catch(Exception _ex) {
+
+            }
+        }
+        private void ExecutedCustomCommand_ZipFile(object sender, ExecutedRoutedEventArgs e) {
+            try {
+                string path = (string)e.Parameter;
+                if (path != null && File.Exists(path) == true) {
+                    string full_file_name = path;
+                    // Попытаться создать файл zip-файл в каталоге файла.
+                    string zip_file_name = $"{full_file_name}.zip";
+                    string file_name = System.IO.Path.GetFileName(full_file_name);
+                    byte[] byte_stream = File.ReadAllBytes(full_file_name);
+                    byte[] zip_bytes = AppUtility.GetZipFromByteArray(file_name, byte_stream);
+                    File.WriteAllBytes(zip_file_name, zip_bytes);
+#if (DEBUG)
+                Console.WriteLine($"{MCodes._0016.mfem()}. {nameof(ExecutedCustomCommand_ZipFile)}. Zip file '{zip_file_name}' created");
+#endif
+                } else {
+#if (DEBUG)
+                    Console.WriteLine($"{MCodes._0017.mfem()}. {nameof(ExecutedCustomCommand_ZipFile)}. No file for zip.");
+#endif
+                }
+            } catch (Exception _ex) {
+                // Пока никак не реагировать, потому что в случае успеха пользователь увидит сообщение и так
+#if (DEBUG)
+                Console.WriteLine($"{MCodes._0018.mfem()}. {nameof(ExecutedCustomCommand_ZipFile)}. Exception: {_ex.Message}");
+#endif
 
             }
         }
@@ -617,7 +664,7 @@ namespace FileChangesWatcher {
             bool res = false;
             try {
                 StringCollection paths = new StringCollection();
-                String path = (string)e.Parameter;
+                string path = (string)e.Parameter;
                 if(File.Exists(path)==true) {
                     File.Delete(path);
                     res = true;
@@ -841,6 +888,11 @@ namespace FileChangesWatcher {
             base.OnStartup(e);
 
             _notifyIcon = (TaskbarIcon)FindResource("NotifyIcon");
+            _notifyIcon.PreviewTrayPopupOpen += (_sender2, _args2) => {
+#if (DEBUG)
+                Console.WriteLine($"{MCodes._0013.mfem()}. {nameof(_notifyIcon.PreviewTrayPopupOpen)}.");
+#endif
+            };
 
             /*
             not fired. Look: https://stackoverflow.com/questions/5139691/wpf-scroll-without-focus
@@ -852,14 +904,15 @@ namespace FileChangesWatcher {
             };
             */
 
-            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand, ExecutedCustomCommand, CanExecuteCustomCommand));
-            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ExecuteFile, ExecutedCustomCommand_ExecuteFile, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand,                     ExecutedCustomCommand,                     CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ExecuteFile,         ExecutedCustomCommand_ExecuteFile,         CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_CopyTextToClipboard, ExecutedCustomCommand_CopyTextToClipboard, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_CopyFileToClipboard, ExecutedCustomCommand_CopyFileToClipboard, CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_MoveFileToClipboard, ExecutedCustomCommand_MoveFileToClipboard, CanExecuteCustomCommand));
-            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DeleteFile, ExecutedCustomCommand_DeleteFile, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ZipFile,             ExecutedCustomCommand_ZipFile,             CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DeleteFile,          ExecutedCustomCommand_DeleteFile,          CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_DialogListingDeletedFiles, ExecutedCustomCommand_DialogListingDeletedFiles, CanExecuteCustomCommand));
-            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ShowMessage, ExecutedCustomCommand_ShowMessage, CanExecuteCustomCommand));
+            _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ShowMessage,         ExecutedCustomCommand_ShowMessage,         CanExecuteCustomCommand));
 
 #if (_Evgeniy)
             foreach(Control _mi in _notifyIcon.ContextMenu.Items)
@@ -1394,6 +1447,7 @@ namespace FileChangesWatcher {
                 //    App.ShowMessage(text);
                 //};
                 App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
+                popup.RestartTimeoutTimer(); // Для сброса встроенного таймера popup, чтобы закрытие всегда инициировалось по собственному таймеру.
             }
         }
 
@@ -1593,16 +1647,16 @@ namespace FileChangesWatcher {
 
         private static int menuitem_header_length = 30;
 
-        public static void customballoon_close(object sender, ElapsedEventArgs e) {
-            Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
-            {
-                if(App.NotifyIcon.CustomBalloon != null) {
-                    _notifyIcon.CustomBalloon.IsOpen = false;
-                }
-            });
-            System.Timers.Timer temp = ((System.Timers.Timer)sender);
-            temp.Stop();
-        }
+        //public static void customballoon_close(object sender, ElapsedEventArgs e) {
+        //    Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
+        //    {
+        //        if(App.NotifyIcon.CustomBalloon != null) {
+        //            _notifyIcon.CustomBalloon.IsOpen = false;
+        //        }
+        //    });
+        //    System.Timers.Timer temp = ((System.Timers.Timer)sender);
+        //    temp.Stop();
+        //}
 
         private static void appendLogToDictionary(String logText, BalloonIcon _ballonIcon) {
             MenuItemData menuItemData = new MenuItemData_Log(_ballonIcon, logText, DateTime.Now);
@@ -1878,10 +1932,9 @@ namespace FileChangesWatcher {
 #if (!_Evgeniy)
                                                     TrayPopupMessage.ControlButtons.Clipboard_Text |
 #endif
-                                                    TrayPopupMessage.ControlButtons.Clipboard_File | TrayPopupMessage.ControlButtons.File_Run | TrayPopupMessage.ControlButtons.File_Delete,
+                                                    TrayPopupMessage.ControlButtons.Clipboard_File | TrayPopupMessage.ControlButtons.File_Run | TrayPopupMessage.ControlButtons.File_Delete | TrayPopupMessage.ControlButtons.File_ZIP,
                                                         TrayPopupMessage.Type.PathCreateChangeRename
                                                         );
-
                                                     //popup.MouseDown += (sender, args) => {
                                                     //    MouseEventHandler evh = null;
                                                     //    string start_textMessage = popup.TextMessage;
@@ -1922,6 +1975,7 @@ namespace FileChangesWatcher {
                                                 // Может вылететь, если происходит перезагрузка эксплорера и toolbar отсутствует. Программа после такого исключения вылетает,
                                                 // не знаю, почему не ловит try/catch, в который она обёрнута.
                                                 App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
+                                                popup.RestartTimeoutTimer(); // Для сброса встроенного таймера popup, чтобы закрытие всегда инициировалось по собственному таймеру.
                                             } catch (Exception _ex) {
                                                 Console.WriteLine("_ex:" + _ex.ToString());
                                             } finally {

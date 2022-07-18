@@ -22,6 +22,8 @@
                         <ColumnDefinition Width='20'/>
                         <ColumnDefinition Width='20'/>
                         <ColumnDefinition Width='20'/>
+                        <ColumnDefinition Width='20'/>
+                        <ColumnDefinition Width='20'/>
                     </Grid.ColumnDefinitions>
                     <MenuItem Grid.Column="1" ToolTip="Copy path to clipboard"   x:Name="mi_clipboard"   Visibility="Collapsed">
                         <MenuItem.Icon>
@@ -38,12 +40,17 @@
                             <Image Source="Icons/Clipboard_Move_File.ico"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Grid.Column="4" ToolTip="Delete file"   x:Name="mi_file_delete"   Visibility="Collapsed">
+                    <MenuItem Grid.Column="4" ToolTip="Zip File"   x:Name="mi_zip_file"   Visibility="Collapsed">
+                        <MenuItem.Icon>
+                            <Image Source="Icons/zip.ico"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Grid.Column="5" ToolTip="Delete file"   x:Name="mi_file_delete"   Visibility="Collapsed">
                         <MenuItem.Icon>
                             <Image Source="Icons/trash.ico"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Grid.Column="5" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
+                    <MenuItem Grid.Column="6" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
                         <MenuItem.Icon>
                             <Image Source="Icons/Enter.ico"/>
                         </MenuItem.Icon>

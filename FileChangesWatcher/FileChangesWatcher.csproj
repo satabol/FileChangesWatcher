@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>FileChangesWatcher</RootNamespace>
     <AssemblyName>FileChangesWatcher</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -19,6 +19,13 @@
     <UpdateAssemblyInfoVersion>True</UpdateAssemblyInfoVersion>
     <AssemblyVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyVersionSettings>
     <AssemblyFileVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyFileVersionSettings>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <ShouldCreateLogs>True</ShouldCreateLogs>
+    <AdvancedSettingsExpanded>True</AdvancedSettingsExpanded>
+    <AssemblyInfoVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyInfoVersionSettings>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -33,16 +40,9 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <ShouldCreateLogs>True</ShouldCreateLogs>
-    <AdvancedSettingsExpanded>True</AdvancedSettingsExpanded>
-    <AssemblyInfoVersionSettings>None.IncrementOnDemand.Increment.None</AssemblyInfoVersionSettings>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -55,15 +55,15 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
@@ -238,7 +238,7 @@
     <DefineConstants>TRACE;DEBUG;_Evgeniy</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
@@ -302,54 +302,29 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Hardcodet.Wpf.TaskbarNotification, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.8\lib\net40\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
+    <Reference Include="Apex.WinForms, Version=1.6.0.0, Culture=neutral, PublicKeyToken=98d06957926c086d, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\Apex.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Hardcodet.NotifyIcon.Wpf, Version=1.1.0.0, Culture=neutral, PublicKeyToken=682384a853a08aad, processorArchitecture=MSIL">
+      <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.1.0\lib\net462\Hardcodet.NotifyIcon.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Management.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\WMI\v1.0\Microsoft.Management.Infrastructure.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Threading.Tasks.Extensions, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop, Version=1.0.168.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SharpShell, Version=2.7.2.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpShell.2.7.2\lib\net40-client\SharpShell.dll</HintPath>
+    <Reference Include="SharpShell, Version=2.2.0.0, Culture=neutral, PublicKeyToken=f14dc899472fe6fb, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpShellTools.2.2.0.0\lib\SharpShell.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing">
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.IO, Version=2.6.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.1.1.10\lib\net40\System.IO.dll</HintPath>
-    </Reference>
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
-    <Reference Include="System.Net.Http, Version=2.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\net40\System.Net.Http.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Http.Extensions, Version=2.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\net40\System.Net.Http.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Http.Primitives, Version=2.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\net40\System.Net.Http.Primitives.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Net.Http.WebRequest, Version=2.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime, Version=2.6.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.1.1.10\lib\net40\System.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks, Version=2.6.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.1.1.10\lib\net40\System.Threading.Tasks.dll</HintPath>
-    </Reference>
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Web">
       <Private>False</Private>
     </Reference>
@@ -363,8 +338,8 @@
     <Reference Include="PresentationFramework">
       <Private>False</Private>
     </Reference>
-    <Reference Include="XamlAnimatedGif, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\XamlAnimatedGif.1.2.3\lib\net40\XamlAnimatedGif.dll</HintPath>
+    <Reference Include="XamlAnimatedGif, Version=2.0.0.0, Culture=neutral, PublicKeyToken=20a987d8023d9690, processorArchitecture=MSIL">
+      <HintPath>..\packages\XamlAnimatedGif.2.0.2\lib\net45\XamlAnimatedGif.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -405,9 +380,6 @@
       <DependentUpon>TrayPopupMessage.xaml</DependentUpon>
     </Compile>
     <Compile Include="AppUtility.cs" />
-    <Compile Include="WebBrowserDialog.xaml.cs">
-      <DependentUpon>WebBrowserDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WindowTestDragDrop.xaml.cs">
       <DependentUpon>WindowTestDragDrop.xaml</DependentUpon>
     </Compile>
@@ -441,10 +413,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="TrayPopupMessage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="WebBrowserDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -550,17 +518,6 @@
     <Resource Include="Icons\Clipboard_32x32.ico" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="MSHTML">
-      <Guid>{3050F1C5-98B5-11CF-BB82-00AA00BDCE0B}</Guid>
-      <VersionMajor>4</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>primary</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="ShellConextMenu.cs" />
     <Resource Include="Icons\Enter.ico" />
     <Resource Include="Icons\Clipboard.ico" />
@@ -585,6 +542,7 @@
     <Resource Include="Icons\Clipboard_Copy_File.ico" />
     <Resource Include="Icons\trash.ico" />
     <Resource Include="Icons\Clipboard_Move_File.ico" />
+    <Resource Include="Icons\zip.ico" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -624,12 +582,5 @@ exit 0</PostBuildEvent>
     <ItemGroup>
       <VersionNumber Include="@(Targets->'%(Version)')" />
     </ItemGroup>
-  </Target>
-  <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets'))" />
   </Target>
 </Project>
