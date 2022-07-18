@@ -543,6 +543,7 @@
     <Resource Include="Icons\trash.ico" />
     <Resource Include="Icons\Clipboard_Move_File.ico" />
     <Resource Include="Icons\zip.ico" />
+    <None Include="FileChangesWatcher.js" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

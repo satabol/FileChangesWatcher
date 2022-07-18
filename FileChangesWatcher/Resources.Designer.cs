@@ -101,6 +101,29 @@ namespace FileChangesWatcher {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {
+        ///  &quot;General&quot;: {
+        ///    &quot;log_contextmenu_size&quot;: 10,
+        ///    &quot;display_notifications&quot;: true,
+        ///    &quot;log&quot;: true,
+        ///    &quot;log_path&quot;: &quot;.&quot;,
+        ///    &quot;log_file_prefix&quot;: &quot;&quot;
+        ///  },
+        ///  // What save to log files:
+        ///  &quot;Extensions&quot;: [
+        ///    [{&quot;archivers&quot;: &quot;.tar|.jar|.zip|.bzip2|.gz|.tgz|.7z|.rar&quot;}],
+        ///    {
+        ///      &quot;officeexcel&quot;: &quot;.xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw&quot;,
+        ///      &quot;officepowerpoint&quot;: &quot;.ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm&quot;,
+        ///      &quot;officevisio&quot;: &quot;.vsd|.vsdx|.vdx|.vsx|.v [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string FileChangesWatcher_default_settings {
+            get {
+                return ResourceManager.GetString("FileChangesWatcher_default_settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         public static System.Drawing.Bitmap folder_horizontal_open {

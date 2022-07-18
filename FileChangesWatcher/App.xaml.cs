@@ -1224,70 +1224,74 @@ namespace FileChangesWatcher {
             JObject jsonData = new JObject();
 
             if(LongFile.Exists(jsonFilePath) == false) {
-                jsonData["General"]                 = new JObject();
-                jsonData["Extensions"]              = new JArray();
-                jsonData["UserExtensions"]          = new JArray();
-                jsonData["FoldersForWatch"]         = new JArray();
-                jsonData["FoldersForExceptions"]    = new JArray();
-                jsonData["FileNamesExceptions"]     = new JArray();
-                jsonData["FoldersForWatch"]         = new JArray();
-                jsonData["FoldersForExceptions"]    = new JArray();
+                //jsonData["General"]                 = new JObject();
+                //jsonData["Extensions"]              = new JArray();
+                //jsonData["UserExtensions"]          = new JArray();
+                //jsonData["FoldersForWatch"]         = new JArray();
+                //jsonData["FoldersForExceptions"]    = new JArray();
+                //jsonData["FileNamesExceptions"]     = new JArray();
+                //jsonData["FoldersForWatch"]         = new JArray();
+                //jsonData["FoldersForExceptions"]    = new JArray();
 
-                // Количество файлов, видимое в меню:
-                jsonData["General"]["log_contextmenu_size"] = 10;
-                // Отображать уведомления (всплывающие балоны):
-                jsonData["General"]["display_notifications"] = true;
-                // Активация логирования в файл:
-                jsonData["General"]["log"] = true;
-                // Путь файлов логирования:
-                jsonData["General"]["log_path"] = ".";
-                // Префикс файлов логирования. Если программа будет записывать файлы логов на общий сетевой каталог, то нужно, чтобы такие файлы не пересекались с файлами других компьюеров
-                jsonData["General"]["log_file_prefix"] = "";
+                //// Количество файлов, видимое в меню:
+                //jsonData["General"]["log_contextmenu_size"] = 10;
+                //// Отображать уведомления (всплывающие балоны):
+                //jsonData["General"]["display_notifications"] = true;
+                //// Активация логирования в файл:
+                //jsonData["General"]["log"] = true;
+                //// Путь файлов логирования:
+                //jsonData["General"]["log_path"] = ".";
+                //// Префикс файлов логирования. Если программа будет записывать файлы логов на общий сетевой каталог, то нужно, чтобы такие файлы не пересекались с файлами других компьюеров
+                //jsonData["General"]["log_file_prefix"] = "";
 
-                {
-                    // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки:
-                    JArray jextensions = ((JArray)jsonData["Extensions"]);
-                    jextensions.Add(new JObject(new JProperty("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z")));
-                    jextensions.Add(new JObject(new JProperty("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw")));
-                    jextensions.Add(new JObject(new JProperty("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm")));
-                    jextensions.Add(new JObject(new JProperty("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm")));
-                    jextensions.Add(new JObject(new JProperty("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl")));
-                    jextensions.Add(new JObject(new JProperty("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp")));
-                    jextensions.Add(new JObject(new JProperty("extensions03", ".cs|.xaml|.config|.ico")));
-                    jextensions.Add(new JObject(new JProperty("extensions04", ".gitignore|.md")));
-                    jextensions.Add(new JObject(new JProperty("extensions05", ".msg|.ini")));
-                    jextensions.Add(".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
-                }
+                //{
+                //    // Список расширений, по-умолчанию, за которыми надо "следить". Из них потом будут регулярки:
+                //    JArray jextensions = ((JArray)jsonData["Extensions"]);
+                //    jextensions.Add(new JObject(new JProperty("archivers", ".tar|.jar|.zip|.bzip2|.gz|.tgz|.7z")));
+                //    jextensions.Add(new JObject(new JProperty("officeexcel", ".xls|.xlt|.xlm|.xlsx|.xlsm|.xltx|.xltm|.xlsb|.xla|.xlam|.xll|.xlw")));
+                //    jextensions.Add(new JObject(new JProperty("officepowerpoint", ".ppt|.pot|.pptx|.pptm|.potx|.potm|.ppam|.ppsx|.ppsm|.sldx|.sldm")));
+                //    jextensions.Add(new JObject(new JProperty("officevisio", ".vsd|.vsdx|.vdx|.vsx|.vtx|.vsl|.vsdm")));
+                //    jextensions.Add(new JObject(new JProperty("autodesk", ".dwg|.dxf|.dwf|.dwt|.dxb|.lsp|.dcl")));
+                //    jextensions.Add(new JObject(new JProperty("extensions02", ".gif|.png|.jpeg|.jpg|.tiff|.tif|.bmp")));
+                //    jextensions.Add(new JObject(new JProperty("extensions03", ".cs|.xaml|.config|.ico")));
+                //    jextensions.Add(new JObject(new JProperty("extensions04", ".gitignore|.md")));
+                //    jextensions.Add(new JObject(new JProperty("extensions05", ".msg|.ini")));
+                //    jextensions.Add(".pdf|.html|.xhtml|.txt|.mp3|.aiff|.au|.midi|.wav|.pst|.xml|.java|.js");
+                //}
 
-                {
-                    JArray jUserExtensions = ((JArray)jsonData["UserExtensions"]);
-                    jUserExtensions.Add(new JObject(new JProperty("extensions01", ".json|.md|.js")));
-                    jUserExtensions.Add(new JObject(new JProperty("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf")));
-                    jUserExtensions.Add(new JObject(new JProperty("visual_studio", ".csproj|.sln")));
-                    jUserExtensions.Add(new JObject(new JProperty("blender", ".blend[0-9]*|.py")));
-                    jUserExtensions.Add(new JObject(new JProperty("other", ".svg|.xaml|.[0-9]+|.ifc|.obj|.exe|.com|.dll")));
-                    jUserExtensions.Add(new JObject(new JProperty("other1", ".bmp|.gif|.jpg|.jpeg|.tiff|.tif|.js|.cs|.java|.exe|.dwg|.dxf|.rar|.mp4|.avi|.png")));
-                }
+                //{
+                //    JArray jUserExtensions = ((JArray)jsonData["UserExtensions"]);
+                //    jUserExtensions.Add(new JObject(new JProperty("extensions01", ".json|.md|.js")));
+                //    jUserExtensions.Add(new JObject(new JProperty("officeword", ".doc|.docx|.docm|.dotx|.dotm|.rtf")));
+                //    jUserExtensions.Add(new JObject(new JProperty("visual_studio", ".csproj|.sln")));
+                //    jUserExtensions.Add(new JObject(new JProperty("blender", ".blend[0-9]*|.py")));
+                //    jUserExtensions.Add(new JObject(new JProperty("other", ".svg|.xaml|.[0-9]+|.ifc|.obj|.exe|.com|.dll")));
+                //    jUserExtensions.Add(new JObject(new JProperty("other1", ".bmp|.gif|.jpg|.jpeg|.tiff|.tif|.js|.cs|.java|.exe|.dwg|.dxf|.rar|.mp4|.avi|.png")));
+                //}
 
-                {
-                    // Список каталогов, за которыми надо следить:
-                    JArray jFoldersForWatch = ((JArray)jsonData["FoldersForWatch"]);
-                    jFoldersForWatch.Add(new JObject(new JProperty("folder01", @"D:\")));
-                    jFoldersForWatch.Add(@"E:\Docs");
-                    jFoldersForWatch.Add(@"F:\");
-                }
+                //{
+                //    // Список каталогов, за которыми надо следить:
+                //    JArray jFoldersForWatch = ((JArray)jsonData["FoldersForWatch"]);
+                //    jFoldersForWatch.Add(new JObject(new JProperty("folder01", @"D:\")));
+                //    jFoldersForWatch.Add(@"E:\Docs");
+                //    jFoldersForWatch.Add(@"F:\");
+                //}
 
-                {
-                    // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
-                    JArray jFoldersForExceptions = ((JArray)jsonData["FoldersForExceptions"]);
-                    jFoldersForExceptions.Add(new JObject(new JProperty("folder01", "D:\\temp")));
-                }
+                //{
+                //    // Список каталогов, которые надо исключить из "слежения" (просто будут сравниваться начала имён файлов):
+                //    JArray jFoldersForExceptions = ((JArray)jsonData["FoldersForExceptions"]);
+                //    jFoldersForExceptions.Add(new JObject(new JProperty("folder01", "D:\\temp")));
+                //}
 
-                {
-                    JArray jFileNamesExceptions = ((JArray)jsonData["FileNamesExceptions"]);
-                    jFileNamesExceptions.Add("~$");
-                }
-                File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(jsonData, Newtonsoft.Json.Formatting.Indented));
+                //{
+                //    JArray jFileNamesExceptions = ((JArray)jsonData["FileNamesExceptions"]);
+                //    jFileNamesExceptions.Add("~$");
+                //}
+                
+                string default_settings = FileChangesWatcher.Resources.FileChangesWatcher_default_settings;
+                jsonData = JObject.Parse(default_settings);
+                //File.WriteAllText(jsonFilePath, JsonConvert.SerializeObject(jsonData, Newtonsoft.Json.Formatting.Indented));
+                File.WriteAllText(jsonFilePath, default_settings);
             } else {
                 //_notifyIcon.ToolTipText = "FileChangesWatcher. Right-click for menu";
                 _notifyIcon.ToolTipText = $"FileChangesWatcher {Assembly.GetExecutingAssembly().GetName().Version.ToString()}. Right-click for menu";
