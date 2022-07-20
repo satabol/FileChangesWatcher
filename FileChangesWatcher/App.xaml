@@ -45,14 +45,14 @@
                             <Image Source="Icons/zip.ico"/>
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Grid.Column="5" ToolTip="Delete file"   x:Name="mi_file_delete"   Visibility="Collapsed">
-                        <MenuItem.Icon>
-                            <Image Source="Icons/trash.ico"/>
-                        </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Grid.Column="6" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
+                    <MenuItem Grid.Column="5" ToolTip="Execute file"             x:Name="mi_enter"       Visibility="Collapsed">
                         <MenuItem.Icon>
                             <Image Source="Icons/Enter.ico"/>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Grid.Column="6" ToolTip="Delete file without confirm dialog and trash"   x:Name="mi_file_delete"   Visibility="Collapsed">
+                        <MenuItem.Icon>
+                            <Image Source="Icons/trash.ico"/>
                         </MenuItem.Icon>
                     </MenuItem>
                 </Grid>

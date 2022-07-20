@@ -243,7 +243,7 @@ namespace FileChangesWatcher {
                 case WatcherChangeTypes.Created:
                 case WatcherChangeTypes.Changed:
                 case WatcherChangeTypes.Renamed: {
-                    mi.ToolTip = "Go to " + _e.FullPath;
+                    mi.ToolTip = "Reveal Explorer " + _e.FullPath;
                     string file_size = "";
                     {
                         FileInfo fi = new FileInfo(_e.FullPath);

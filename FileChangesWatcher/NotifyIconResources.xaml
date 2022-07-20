@@ -80,7 +80,7 @@
                         Command="{Binding AutostartSetter}"
                         >
             </MenuItem>
-            <MenuItem Header="Open Home Folder" Command="{Binding OpenHomeFolder}">
+            <MenuItem Header="Open Home Folder In Explorer" Command="{Binding OpenHomeFolder}">
                 <MenuItem.Icon>
                     <Image Source="/Icons/home_folder.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>

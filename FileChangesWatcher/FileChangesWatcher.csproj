@@ -544,6 +544,7 @@
     <Resource Include="Icons\Clipboard_Move_File.ico" />
     <Resource Include="Icons\zip.ico" />
     <None Include="FileChangesWatcher.js" />
+    <None Include="bin\Debug\FileChangesWatcher.js" />
     <Content Include="res_files\main_html_page.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
