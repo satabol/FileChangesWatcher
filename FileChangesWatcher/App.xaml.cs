@@ -778,9 +778,9 @@ namespace FileChangesWatcher {
                     string[] lst_items_name = { "menu_separator", "menu_settings", "menu_exit" };
 
                     lock(_notifyIcon.ContextMenu.Items) {
-                        for(int i = _notifyIcon.ContextMenu.Items.Count - 1; i >= 0; i--) {
-                            if(Array.IndexOf(lst_items_name, ((Control)_notifyIcon.ContextMenu.Items.GetItemAt(i)).Name) < 0) {
-                                _notifyIcon.ContextMenu.Items.RemoveAt(i);
+                        for(int I = _notifyIcon.ContextMenu.Items.Count - 1; I >= 0; I--) {
+                            if(Array.IndexOf(lst_items_name, ((Control)_notifyIcon.ContextMenu.Items.GetItemAt(I)).Name) < 0) {
+                                _notifyIcon.ContextMenu.Items.RemoveAt(I);
                             }
                         }
 
@@ -903,6 +903,29 @@ namespace FileChangesWatcher {
                 int x=0;
             };
             */
+            {
+                // Добавить в пункт меню "Open Home Folder" tooltip с путём к программе (вдруг надо только посмотреть, и не переходить).
+                foreach (var _mi in _notifyIcon.ContextMenu.Items) {
+                    Console.WriteLine($"{_mi.GetType()}");
+                    if(_mi is System.Windows.Controls.MenuItem) {
+                        System.Windows.Controls.MenuItem mi = _mi as System.Windows.Controls.MenuItem;
+                        if (mi.Name == "menu_settings") {
+                            foreach (var _mi1 in mi.Items) {
+                                if (_mi1!=null && _mi1 is System.Windows.Controls.MenuItem) {
+                                    MenuItem mi1 = _mi1 as System.Windows.Controls.MenuItem;
+                                    if (mi1.Name== "OpenHomeFolder") {
+                                        System.Windows.Controls.MenuItem OpenHomeFolder = mi1 as System.Windows.Controls.MenuItem;
+                                        string exe_folder = App.getExeFilePath();
+                                        OpenHomeFolder.ToolTip = exe_folder;
+                                        break;
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
 
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand,                     ExecutedCustomCommand,                     CanExecuteCustomCommand));
             _notifyIcon.ContextMenu.CommandBindings.Add(new CommandBinding(CustomRoutedCommand_ExecuteFile,         ExecutedCustomCommand_ExecuteFile,         CanExecuteCustomCommand));
