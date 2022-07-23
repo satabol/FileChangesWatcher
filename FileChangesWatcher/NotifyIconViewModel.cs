@@ -198,7 +198,7 @@ namespace FileChangesWatcher
                 {
                     CommandAction = () =>
                     {
-                        System.Diagnostics.Process.Start("https://sourceforge.net/projects/filechangeswatcher/");
+                        System.Diagnostics.Process.Start(App.Settings.OpenHomePage);
                     },
                     CanExecuteFunc = () => true
                 };

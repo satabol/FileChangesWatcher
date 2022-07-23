@@ -96,7 +96,7 @@
             <MenuItem Header="UnRegister Windows Explorer Context Menu (Admin)" Command="{Binding UnRegisterWindowsExplorerContextMenu}">
             </MenuItem>-->
 
-            <MenuItem Header="Home page" Command="{Binding OpenHomePage}">
+            <MenuItem Header="Home page" Command="{Binding OpenHomePage}" x:Name="OpenHomePage">
                 <MenuItem.Icon>
                     <Image Source="/Icons/homepage.ico"   Width="16" Height="16"/>
                 </MenuItem.Icon>

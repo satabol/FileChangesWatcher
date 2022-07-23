@@ -917,11 +917,17 @@ namespace FileChangesWatcher {
                                         System.Windows.Controls.MenuItem OpenHomeFolder = mi1 as System.Windows.Controls.MenuItem;
                                         string exe_folder = App.getExeFilePath();
                                         OpenHomeFolder.ToolTip = exe_folder;
-                                        break;
+                                        //break;
+                                        continue;
+                                    } else if (mi1.Name == nameof(App.Settings.OpenHomePage)) {
+                                        System.Windows.Controls.MenuItem OpenHomePage = mi1 as System.Windows.Controls.MenuItem;
+                                        OpenHomePage.ToolTip = App.Settings.OpenHomePage;
+                                        //break;
+                                        continue;
                                     }
+
                                 }
                             }
-                            break;
                         }
                     }
                 }
@@ -1652,6 +1658,8 @@ namespace FileChangesWatcher {
         }
 
         public static class Settings {
+            // Ссылка на домашний каталог:
+            public static string OpenHomePage = "https://sourceforge.net/projects/filechangeswatcher/";
             // Список каталогов, которые надо исключить из вывода:
             public static List<string> arr_folders_for_exceptions = null;
             public static List<string> arr_files_for_exceptions = null;
