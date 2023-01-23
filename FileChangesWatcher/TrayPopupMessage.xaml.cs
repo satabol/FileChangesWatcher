@@ -30,16 +30,19 @@ namespace FileChangesWatcher
         public event PropertyChangedEventHandler PropertyChanged;
         public void RaisePropertyChanged(string propertyName) {
             // Если кто-то на него подписан, то вызывем его
-            if (PropertyChanged != null)
+            if (PropertyChanged != null) {
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
+        private static int _id = 0;
+        public int id = 0;
 
 
         public string path = null;
         public WatchingObjectType wType;
         public TaskbarIcon tb = null;
-        private System.Timers.Timer timeout_Timer = null;
+        public System.Timers.Timer timeout_Timer = null;
         private bool _IsDragging;
 
         public bool IsDragging {
@@ -57,6 +60,10 @@ namespace FileChangesWatcher
             Debug.WriteLine("StopTimeoutTimer");
             tb.ResetBalloonCloseTimer();
             timeout_Timer.Stop();
+#if DEBUG
+            Console.WriteLine($"{MCodes._0022.mfem()}. StopTimeoutTimer.");
+#endif
+
         }
 
         public void RestartTimeoutTimer() {
@@ -65,6 +72,9 @@ namespace FileChangesWatcher
             timeout_Timer.Stop();
             timeout_Timer.Enabled = true;
             timeout_Timer.Start();
+#if DEBUG
+            Console.WriteLine($"{MCodes._0023.mfem()}. RestartTimeoutTimer. {this.id}");
+#endif
         }
 
         public enum ControlButtons
@@ -80,6 +90,9 @@ namespace FileChangesWatcher
                 text_message.Text = value;
                 timeout_Timer.Stop();
                 timeout_Timer.Start();
+#if DEBUG
+                Console.WriteLine($"{MCodes._0031.mfem()}. timeout_Timer.Start(). {this.id}");
+#endif
             }
         }
 
@@ -279,8 +292,28 @@ namespace FileChangesWatcher
             }
         }
 
+        public void MouseEnterOperation(object sender, MouseEventArgs e) {
+            tb.ResetBalloonCloseTimer();
+            this.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x04, 0x7A, 0x95));
+            //this.Visibility = Visibility.Hidden;
+            App.NotifyIcon.ResetBalloonCloseTimer();
+            if (timeout_Timer.Enabled==true) {
+                timeout_Timer.Stop();
+                timeout_Timer.Enabled = false;
+#if (DEBUG)
+                Console.WriteLine($"{MCodes._0003.mfem()} {DateTime.Now.ToString("HH:mm:ss")}. MouseEnter. Close Timer Stop");
+#endif
+            } else {
+#if (DEBUG)
+                Console.WriteLine($"{MCodes._0004.mfem()} {DateTime.Now.ToString("HH:mm:ss")}. MouseLeave. Close Timer not enabled");
+#endif
+            }
+        }
+
         private void init(string _path, WatchingObjectType _wType, TaskbarIcon _tb, Image _item_image, ControlButtons _buttons, Type _type)
         {
+            _id++;
+            id = _id;
             tb = _tb;
             item_image = _item_image;
             Image img = ((Image)this.FindName("item_image"));
@@ -351,28 +384,29 @@ namespace FileChangesWatcher
 
 
 
-            this.MouseEnter += (sender, args) =>
-            {
-                tb.ResetBalloonCloseTimer();
-                this.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x04, 0x7A, 0x95) );
-                //this.Visibility = Visibility.Hidden;
-                App.NotifyIcon.ResetBalloonCloseTimer();
-                if (timeout_Timer.Enabled){
-                    timeout_Timer.Stop();
-#if (DEBUG)
-                    Console.WriteLine($"{MCodes._0003.mfem()}. MouseEnter. Close Timer Stop");
-#endif
-                } else {
-#if (DEBUG)
-                    Console.WriteLine($"{MCodes._0004.mfem()}. MouseLeave. Close Timer not enabled");
-#endif
-                }
-            };
+            this.MouseEnter += this.MouseEnterOperation;
+//            (sender, args) =>
+//            {
+//                tb.ResetBalloonCloseTimer();
+//                this.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0x04, 0x7A, 0x95) );
+//                //this.Visibility = Visibility.Hidden;
+//                App.NotifyIcon.ResetBalloonCloseTimer();
+//                if (timeout_Timer.Enabled){
+//                    timeout_Timer.Stop();
+//#if (DEBUG)
+//                    Console.WriteLine($"{MCodes._0003.mfem()}. MouseEnter. Close Timer Stop");
+//#endif
+//                } else {
+//#if (DEBUG)
+//                    Console.WriteLine($"{MCodes._0004.mfem()}. MouseLeave. Close Timer not enabled");
+//#endif
+//                }
+//            };
             this.MouseLeave += (sender, args) =>
             {
                 this.Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x00, 0xAB, 0xD1));
                 App.NotifyIcon.ResetBalloonCloseTimer();
-                if (timeout_Timer.Enabled) {
+                if (timeout_Timer.Enabled==true) {
                     timeout_Timer.Stop();
 #if (DEBUG)
                     Console.WriteLine($"{MCodes._0005.mfem()}. MouseLeave. Closed Timer Stop. Start new closed timer.");
@@ -385,7 +419,7 @@ namespace FileChangesWatcher
                     // popup на видимость. Если не видим - таймер закрытия этого popup не активируется.
                     timeout_Timer.Start();
 #if (DEBUG)
-                Console.WriteLine($"{MCodes._0002.mfem()}. MouseLeave. Closed Timer start");
+                    Console.WriteLine($"{MCodes._0002.mfem()} {DateTime.Now.ToString("HH:mm:ss")}. MouseLeave. Closed Timer start. {this.id}");
 #endif
                 }
             };
@@ -521,7 +555,8 @@ namespace FileChangesWatcher
 
         public void customballoon_close(object sender, ElapsedEventArgs e)
         {
-            if(this.IsDragging==false) {
+            if (this.IsDragging==false) {
+                System.Diagnostics.StackTrace t = new System.Diagnostics.StackTrace();
                 Application.Current.Dispatcher.Invoke((Action)delegate  // http://stackoverflow.com/questions/2329978/the-calling-thread-must-be-sta-because-many-ui-components-require-this#2329978
                 {
                     // popup_test.Visibility = Visibility.Hidden;
@@ -529,9 +564,10 @@ namespace FileChangesWatcher
                     if (tb.CustomBalloon != null) {
                         this.timeout_Timer.Enabled = false;
                         this.timeout_Timer.Stop();
-                        tb.CustomBalloon.IsOpen = false;
+                        //tb.CustomBalloon.IsOpen = false; - Это закрывало не текущий popup, а popup, открытый в tooltip
+                        this.Visibility = Visibility.Collapsed;
 #if (DEBUG)
-                        Console.WriteLine($"{MCodes._0006.mfem()}. {nameof(customballoon_close)}. Close CustomBalloon.");
+                        Console.WriteLine($"{MCodes._0006.mfem()} {DateTime.Now.ToString("HH:mm:ss")}. {nameof(customballoon_close)}. Close CustomBalloon. {this.id}");
 #endif
                     } else {
 #if (DEBUG)

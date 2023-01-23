@@ -450,6 +450,9 @@ namespace FileChangesWatcher {
                                         };
                                         App.NotifyIcon.ContextMenu.Opened += (_sender2, _args2) => {
                                             dragdrop_continue = true;
+#if DEBUG
+                                            Console.WriteLine($"{MCodes._0021.mfem()}. App.NotifyIcon.ContextMenu.Opened.");
+#endif
                                         };
                                         mi.AllowDrop = true;
                                         // https://stackoverflow.com/questions/3040415/drag-and-drop-to-desktop-explorer
@@ -1965,9 +1968,9 @@ namespace FileChangesWatcher {
                                                     }
                                                     popup = new TrayPopupMessage(last_event.e.FullPath, $"{last_event.mi.wType.ToString()} {last_event.e.ChangeType.ToString()} [size: {ext_text} byte]", last_event.mi.wType, App.NotifyIcon, last_event.popup_image,
 #if (!_Evgeniy)
-                                                    TrayPopupMessage.ControlButtons.Clipboard_Text |
+                                                        TrayPopupMessage.ControlButtons.Clipboard_Text |
 #endif
-                                                    TrayPopupMessage.ControlButtons.Clipboard_File | TrayPopupMessage.ControlButtons.File_Run | TrayPopupMessage.ControlButtons.File_Delete | TrayPopupMessage.ControlButtons.File_ZIP,
+                                                        TrayPopupMessage.ControlButtons.Clipboard_File | TrayPopupMessage.ControlButtons.File_Run | TrayPopupMessage.ControlButtons.File_Delete | TrayPopupMessage.ControlButtons.File_ZIP,
                                                         TrayPopupMessage.Type.PathCreateChangeRename
                                                         );
                                                     //popup.MouseDown += (sender, args) => {
@@ -2007,10 +2010,27 @@ namespace FileChangesWatcher {
                                                     //};
                                                 }
 
+                                                bool prev_is_visible = false;
+                                                bool is_prev_timeout_Timer_enabled = false;
+                                                if (App.NotifyIcon.CustomBalloon?.Child!=null &&App.NotifyIcon.CustomBalloon?.Child.IsVisible==true && App.NotifyIcon.CustomBalloon?.Child is FileChangesWatcher.TrayPopupMessage) {
+                                                    prev_is_visible = true;
+                                                    is_prev_timeout_Timer_enabled = ((TrayPopupMessage)App.NotifyIcon.CustomBalloon.Child).timeout_Timer.Enabled;
+                                                }
+#if DEBUG
+                                                Console.WriteLine($"{MCodes._0029.mfem()}. DEBUG mode. old is_prev_timeout_Timer_enabled=={is_prev_timeout_Timer_enabled}.");
+#endif
                                                 // Может вылететь, если происходит перезагрузка эксплорера и toolbar отсутствует. Программа после такого исключения вылетает,
-                                                // не знаю, почему не ловит try/catch, в который она обёрнута.
+                                                // не знаю, почему не ловит tif (is_prev_popup_mouse_over == true) {рый она обёрнута.
                                                 App.NotifyIcon.ShowCustomBalloon(popup, PopupAnimation.None, 4000);
                                                 popup.RestartTimeoutTimer(); // Для сброса встроенного таймера popup, чтобы закрытие всегда инициировалось по собственному таймеру.
+                                                
+                                                // Если предыдущий popup держался за счёт остановленного таймера закрытия, то и этот popup должен оставаться с этим свойством.
+                                                if (prev_is_visible==true && is_prev_timeout_Timer_enabled == false) {
+                                                    popup.timeout_Timer.Stop();
+                                                    popup.timeout_Timer.Enabled = false;
+                                                    popup.MouseEnterOperation(null, null);
+                                                }
+
                                             } catch (Exception _ex) {
                                                 Console.WriteLine("_ex:" + _ex.ToString());
                                             } finally {
